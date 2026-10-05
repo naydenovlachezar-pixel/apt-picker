@@ -201,6 +201,22 @@ pre{white-space:pre;overflow-x:auto;font-size:12px;line-height:1.45;margin:10px 
 .pf-mark .pill{opacity:0}
 .fl:hover .pf-mark .pill,.fl:focus-within .pf-mark .pill{opacity:1}
 @media (prefers-reduced-motion:no-preference){.pf-mark .pill{transition:opacity .15s}}
+.plan.img .unit.free{fill-opacity:.32}
+.plan.img .unit.reserved{fill-opacity:.38}
+.plan.img .unit.sold{fill-opacity:.45}
+.plan.img .unit:hover,.plan.img .unit:focus-visible{fill-opacity:.58}
+.plan.img .lbls text{paint-order:stroke;stroke:var(--surface);stroke-linejoin:round}
+.fcards{list-style:none;margin:0;padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.fcard{width:100%;text-align:left;border:1px solid var(--line);border-left:5px solid var(--free);background:var(--paper);border-radius:3px;padding:12px 14px;cursor:pointer;display:flex;flex-direction:column;gap:3px}
+.fcard.reserved{border-left-color:var(--reserved)}
+.fcard.sold{border-left-color:var(--sold)}
+.fcard.dim{opacity:.45}
+.fcard.sel{outline:3px solid var(--brass);outline-offset:1px}
+.fcard:hover{border-color:var(--ink)}
+.fcard b{font:700 24px/1.1 var(--cond)}
+.fcard span{font-size:14px;color:var(--muted)}
+.fcard .st{display:flex;align-items:center;gap:6px;color:var(--ink)}
+.fcard .pr{font:600 17px var(--cond);color:var(--ink)}
 .pf-sec rect{fill:rgba(15,22,25,.78)}
 .pf-sec text{fill:#fff;font-family:var(--cond);font-weight:700;text-anchor:middle}
 html.embedded,html.embedded body{background:transparent}
@@ -251,7 +267,7 @@ html.embedded dialog{position:fixed;inset:calc(var(--vp-top) + 20px) 0 auto 0;ma
 const CONFIG = { developer: "Линия Девелопмънт", placement: "developer-site", source: "apartment-picker",
   hubspot: { portalId: "PORTAL_ID", formGuid: "FORM_GUID" }, storageKey: "aptdemo:v1" };
 const STATUS = { free: { label: "Свободен", plural: "Свободни" }, reserved: { label: "Резервиран", plural: "Резервирани" }, sold: { label: "Продаден", plural: "Продадени" } };
-const ROOM_NAMES = { 1: "Едностаен", 2: "Двустаен", 3: "Тристаен", 4: "Четиристаен" };
+const ROOM_NAMES = { 1: "Едностаен", 2: "Двустаен", 3: "Тристаен", 4: "Четиристаен", 5: "Петстаен", 6: "Шестстаен" };
 const STAGES = {
   new: { label: "Ново запитване", eff: null },
   viewing: { label: "Насрочен оглед", eff: null },
@@ -363,7 +379,8 @@ const facadeSVG = b => photoFacade(b);
 /* ============ Разпределение ============ */
 function planSVG(b, n){
   const L = b.layouts[b.floorLayout(S.sec, n)];
-  if (!L) return `<p class="state">За този етаж още няма разпределение.</p>`;
+  if (!L || !L.units) return floorCards(b, n);
+  if (L.kind === "image") return imagePlan(b, n, L);
   let s = `<svg class="plan" viewBox="0 0 1000 560" role="group" aria-label="Разпределение на етаж ${n}">
     <defs><pattern id="hatch" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="10" height="10" style="fill:var(--paper)"/><line x1="0" y1="0" x2="0" y2="10" style="stroke:var(--line);stroke-width:4"/></pattern></defs>`;
   L.balconies.forEach(([x, y, w, h]) => s += `<rect class="p-balc" x="${x}" y="${y}" width="${w}" height="${h}"/>`);
@@ -386,11 +403,45 @@ function planSVG(b, n){
   return s + `</svg>`;
 }
 
+// Разпределение от качен чертеж: контурите на апартаментите са в пиксели на изображението
+function centroid(pts){
+  let a = 0, cx = 0, cy = 0;
+  for (let i = 0; i < pts.length; i++){ const [x1, y1] = pts[i], [x2, y2] = pts[(i + 1) % pts.length], c = x1 * y2 - x2 * y1; a += c; cx += (x1 + x2) * c; cy += (y1 + y2) * c; }
+  if (Math.abs(a) < 1e-6) return [pts.reduce((s, p) => s + p[0], 0) / pts.length, pts.reduce((s, p) => s + p[1], 0) / pts.length];
+  return [cx / (3 * a), cy / (3 * a)];
+}
+function imagePlan(b, n, L){
+  const k = L.w / 1000, apts = floorApts(b.id, n, S.sec);
+  let s = `<svg class="plan img" viewBox="0 0 ${L.w} ${L.h}" role="group" aria-label="Разпределение на ${floorName(b, S.sec, n).toLowerCase()}"><image href="${esc(L.image_url)}" x="0" y="0" width="${L.w}" height="${L.h}" preserveAspectRatio="none"/>`;
+  let lbls = "", ring = "", drawn = 0;
+  for (const [key, u] of Object.entries(L.units)){
+    const a = apts.find(x => x.unit === key);
+    if (!a || !u.pts || u.pts.length < 3) continue;
+    drawn++;
+    const st = statusOf(a), ok = matches(a), pts = u.pts.map(p => p.join(",")).join(" "), [tx, ty] = centroid(u.pts);
+    s += `<polygon class="unit ${st} ${ok ? "" : "dim"}" points="${pts}" data-uid="${a.uid}" tabindex="0" role="button" style="stroke-width:${3 * k}" aria-label="Апартамент ${a.label}, ${(ROOM_NAMES[a.rooms] || a.rooms + " стаи").toLowerCase()}, ${m2(a.gross)}, ${STATUS[st].label.toLowerCase()}"/>`;
+    lbls += `<g class="lbls ${ok ? "" : "dim"}" pointer-events="none" style="stroke-width:${5 * k}">
+      <text class="tag" x="${tx}" y="${ty - 6 * k}" style="font-size:${30 * k}px">${a.label}</text><text class="tag-sub" x="${tx}" y="${ty + 16 * k}" style="font-size:${16 * k}px">${m2(a.gross)}</text><text class="tag-st ${st}" x="${tx}" y="${ty + 36 * k}" style="font-size:${15 * k}px">${STATUS[st].label}</text></g>`;
+    if (S.sel === a.uid) ring = `<polygon class="sel-ring" points="${pts}" style="stroke-width:${7 * k}"/>`;
+  }
+  if (!drawn) return floorCards(b, n);
+  return s + lbls + ring + `</svg>`;
+}
+// Етаж без очертано разпределение: апартаментите като карти
+function floorCards(b, n){
+  const apts = floorApts(b.id, n, S.sec);
+  if (!apts.length) return `<p class="state">На този етаж няма апартаменти.</p>`;
+  return `<ul class="fcards">${apts.map(a => { const st = statusOf(a), ok = matches(a);
+    return `<li><button class="fcard ${st} ${ok ? "" : "dim"} ${S.sel === a.uid ? "sel" : ""}" data-action="open-apt" data-uid="${a.uid}">
+      <b>${a.label}</b><span>${ROOM_NAMES[a.rooms] || a.rooms + " стаи"}, ${m2(a.gross)}</span><span class="st"><i class="dot ${st}" aria-hidden="true"></i>${STATUS[st].label}</span>
+      <span class="pr">${st === "sold" ? "" : a.price == null ? "По запитване" : eur(a.price)}</span></button></li>`; }).join("")}</ul>`;
+}
+
 /* ============ Панели ============ */
 function rowHTML(a, showB){
   const st = statusOf(a);
   return `<li><button class="row" data-action="open-apt" data-uid="${a.uid}"><span class="dot ${st}" aria-hidden="true"></span><span class="num">${a.label}</span>
-    <span class="meta">${showB ? `<span class="bname">${esc(B(a.b).short)}</span>` : ""}<b>${ROOM_NAMES[a.rooms]}</b>, ${m2(a.gross)}<br>${floorName(B(a.b), a.sec, a.floor)}, ${STATUS[st].label.toLowerCase()}</span>
+    <span class="meta">${showB ? `<span class="bname">${esc(B(a.b).short)}</span>` : ""}<b>${ROOM_NAMES[a.rooms] || a.rooms + " стаи"}</b>, ${m2(a.gross)}<br>${floorName(B(a.b), a.sec, a.floor)}, ${STATUS[st].label.toLowerCase()}</span>
     <span class="pr ${st === "sold" || a.price == null ? "sold" : ""}">${st === "sold" ? "Продаден" : a.price == null ? "По запитване" : eur(a.price)}</span></button></li>`;
 }
 function resultsPanel(){
@@ -409,11 +460,11 @@ function floorPanel(b, n){
 function cardPanel(a){
   const st = statusOf(a), sold = st === "sold", b = B(a.b);
   return `<div class="card-head"><h2 id="card-title" tabindex="-1">Апартамент ${a.label}</h2><span class="badge ${st}">${STATUS[st].label}</span></div>
-    <p class="type">${ROOM_NAMES[a.rooms]}, ${b.multi ? `${esc(b.secName(a.sec))}, етаж ${a.floor}` : `етаж ${a.floor}`}, ${esc(b.name)}</p>
+    <p class="type">${ROOM_NAMES[a.rooms] || a.rooms + " стаи"}, ${b.multi ? `${esc(b.secName(a.sec))}, етаж ${a.floor}` : `етаж ${a.floor}`}, ${esc(b.name)}</p>
     ${sold ? `<div class="price sold">Продаден</div>` : a.price == null ? `<div class="price sold">Цена по запитване</div>` : `<div class="price">${eur(a.price)}</div><div class="ppm">${nf.format(Math.round(a.price / a.gross))} € за m² обща площ</div>`}
-    <dl class="facts"><div><dt>Обща площ</dt><dd>${m2(a.gross)}</dd></div><div><dt>Чиста площ</dt><dd>${m2(a.net)}</dd></div>
+    <dl class="facts"><div><dt>Обща площ</dt><dd>${m2(a.gross)}</dd></div><div><dt>Чиста площ</dt><dd>${a.net ? m2(a.net) : "–"}</dd></div>
       <div><dt>Стаи</dt><dd>${a.rooms}</dd></div><div><dt>${a.garden ? "Двор" : "Тераса"}</dt><dd>${a.terrace ? m2(a.terrace) : "Няма"}</dd></div>
-      <div class="wide"><dt>Изложение</dt><dd>${a.exposure}</dd></div><div class="wide"><dt>Етап</dt><dd>${esc(b.stage)}, ${esc(b.ready.toLowerCase())}</dd></div></dl>
+      ${a.exposure ? `<div class="wide"><dt>Изложение</dt><dd>${esc(a.exposure)}</dd></div>` : ""}<div class="wide"><dt>Етап</dt><dd>${esc(b.stage)}, ${esc(b.ready.toLowerCase())}</dd></div></dl>
     <div class="actions"><button class="btn primary" data-action="inquire">${sold ? "Запитване за подобен апартамент" : "Запитване за този апартамент"}</button><button class="btn" data-action="pdf">Разпределение в PDF</button></div>
     <button class="linkbtn closebtn" data-action="deselect">Затвори картата</button>`;
 }
@@ -574,8 +625,9 @@ function addTestDeal(){
 function openInquiry(a){
   const dlg = $("#inq"), body = $("#inq-body"), b = B(a.b), sold = statusOf(a) === "sold";
   const where = b.multi ? `${b.secName(a.sec).toLowerCase()}, етаж ${a.floor}` : `етаж ${a.floor}`;
-  const msg = sold ? `Здравейте, апартамент ${a.label} в ${b.name} е продаден. Интересувам се от подобен ${ROOM_NAMES[a.rooms].toLowerCase()} апартамент.`
-                   : `Здравейте, интересувам се от апартамент ${a.label} в ${b.name} (${ROOM_NAMES[a.rooms].toLowerCase()}, ${m2(a.gross)}, ${where}).`;
+  const type = (ROOM_NAMES[a.rooms] || a.rooms + "-стаен").toLowerCase();
+  const msg = sold ? `Здравейте, апартамент ${a.label} в ${b.name} е продаден. Интересувам се от подобен ${type} апартамент.`
+                   : `Здравейте, интересувам се от апартамент ${a.label} в ${b.name} (${type}, ${m2(a.gross)}, ${where}).`;
   body.innerHTML = `<h2 id="inq-title">Запитване за апартамент ${a.label}</h2><p class="sub">${esc(b.name)}, ${esc(where)}, ${m2(a.gross)}</p>
     <form id="inq-form" novalidate>
       <div class="field"><label for="q-name">Име</label><input id="q-name" autocomplete="name" required><span class="err" id="e-name"></span></div>
@@ -688,7 +740,7 @@ function adapt(bundle){
     PHOTO[x.id] = { w: x.facade.w, h: x.facade.h, floors: Object.fromEntries(Object.entries(bySec).map(([k, fl]) => [k, Object.fromEntries(Object.entries(fl).map(([n, f]) => [n, f.polygon]))])) };
     PHOTO_SRC[x.id] = x.facade.image_url;
     for (const a of x.apartments) APTS.push({ uid: `${x.id}:${a.id}`, b: x.id, id: a.id, label: a.label, sec: a.section || first, floor: a.floor, unit: a.unit,
-      rooms: a.rooms, net: Number(a.net), gross: Number(a.gross), terrace: Number(a.outdoor) || 0, garden: a.outdoor_kind === "garden",
+      rooms: a.rooms, net: a.net == null ? null : Number(a.net), gross: Number(a.gross), terrace: Number(a.outdoor) || 0, garden: a.outdoor_kind === "garden",
       exposure: a.exposure || "", price: a.price == null ? null : Number(a.price), base: a.status, pdf: a.pdf_url });
   }
   return [BUILDINGS, PHOTO, PHOTO_SRC, APTS];
