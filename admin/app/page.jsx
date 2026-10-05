@@ -4,6 +4,7 @@ import { supabase, WIDGET_ORIGIN } from "../lib/supabase";
 import { readFile, buildImport, downloadCsv, STATUS_OUT } from "../lib/sheet";
 import FacadeEditor from "./FacadeEditor";
 import LayoutEditor from "./LayoutEditor";
+import BuildingDialog from "./BuildingDialog";
 
 const STATUS = { free: "Свободен", reserved: "Резервиран", sold: "Продаден" };
 const ROOMS = { 1: "Едностаен", 2: "Двустаен", 3: "Тристаен", 4: "Четиристаен" };
@@ -85,6 +86,7 @@ function Dashboard({ session }) {
   const [history, setHistory] = useState(null);
   const [facade, setFacade] = useState(false);
   const [plans, setPlans] = useState(false);
+  const [bdlg, setBdlg] = useState(null); // "new" | "edit"
   const fileRef = useRef();
   const toastTimer = useRef();
 
@@ -104,13 +106,13 @@ function Dashboard({ session }) {
     });
   }, []);
 
-  useEffect(() => {
-    if (!orgId) return;
-    sb.from("buildings").select("id, slug, name, district, published, sort_order").eq("org_id", orgId).order("sort_order").then(({ data, error }) => {
+  function loadBuildings(focus) {
+    return sb.from("buildings").select("id, slug, name, district, stage, ready_text, description, published, sort_order").eq("org_id", orgId).order("sort_order").then(({ data, error }) => {
       if (error) return say("Сградите не се заредиха: " + error.message, true);
-      setBuildings(data || []); setBid(b => (data || []).some(x => x.id === b) ? b : (data && data[0] ? data[0].id : null));
+      setBuildings(data || []); setBid(b => focus || ((data || []).some(x => x.id === b) ? b : (data && data[0] ? data[0].id : null)));
     });
-  }, [orgId]);
+  }
+  useEffect(() => { if (orgId) loadBuildings(); }, [orgId]);
 
   function loadApts() {
     return sb.from("apartments").select(APT_FIELDS).eq("building_id", bid)
@@ -214,9 +216,10 @@ function Dashboard({ session }) {
         <div className="tabs" role="tablist" aria-label="Сгради">
           {buildings.map(b => (
             <button key={b.id} className="tab" role="tab" aria-selected={b.id === bid} onClick={() => setBid(b.id)}>
-              <b>{b.name}</b><span>{b.district}{b.published ? "" : ", скрита от сайта"}</span>
+              <b>{b.name}</b><span>{[b.district, b.published ? "" : "скрита от сайта"].filter(Boolean).join(", ")}</span>
             </button>
           ))}
+          {canEdit && <button className="tab add" onClick={() => setBdlg("new")}>+ Нова сграда</button>}
         </div>
 
         {building && <>
@@ -244,6 +247,7 @@ function Dashboard({ session }) {
               <option value="">Всички статуси</option>{Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
             <span className="spacer" />
+            <button className="btn ghost" onClick={() => setBdlg("edit")}>Данни и код</button>
             <button className="btn ghost" onClick={() => setFacade(true)}>Фасада и входове</button>
             <button className="btn ghost" onClick={() => setPlans(true)}>Разпределения</button>
             <button className="btn ghost" onClick={openHistory}>История</button>
@@ -254,7 +258,7 @@ function Dashboard({ session }) {
           </div>
 
           <div className="tablewrap">
-            {loading ? <p className="empty">Зареждане на апартаментите…</p> : !list.length ? <p className="empty">Няма апартаменти с тези филтри.</p> : (
+            {loading ? <p className="empty">Зареждане на апартаментите…</p> : !apts.length ? <p className="empty">В сградата още няма апартаменти. Отворете „Разпределения“, качете чертеж на етажа и го приложете към етажите.</p> : !list.length ? <p className="empty">Няма апартаменти с тези филтри.</p> : (
               <table>
                 <thead><tr><th>Апартамент</th>{multi && <th>Вход</th>}<th>Етаж</th><th>Тип</th><th className="r">Обща площ</th><th className="r">Цена, €</th><th>Цена на сайта</th><th>Статус</th></tr></thead>
                 <tbody>{list.map(a => (
@@ -268,6 +272,8 @@ function Dashboard({ session }) {
       {importing && <ImportDialog im={importing} building={building} onCancel={() => setImporting(null)} onApply={applyImport} />}
       {facade && building && <FacadeEditor building={building} orgId={orgId} canEdit={canEdit} onClose={() => setFacade(false)} onSaved={loadApts} />}
       {plans && building && <LayoutEditor building={building} orgId={orgId} canEdit={canEdit} onClose={() => setPlans(false)} onSaved={loadApts} />}
+      {bdlg && <BuildingDialog mode={bdlg} orgId={orgId} building={bdlg === "edit" ? building : null} onClose={() => setBdlg(null)}
+        onDone={async r => { const created = r.created; setBdlg(null); await loadBuildings(r.id); say(r.message); if (created) setFacade(true); }} />}
       {history && <HistoryPanel h={history} building={building} onClose={() => setHistory(null)} />}
       {toast && <div className={"toast" + (toast.isErr ? " err" : "")} role="status">{toast.text}</div>}
     </>
