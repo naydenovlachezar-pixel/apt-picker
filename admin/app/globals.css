@@ -202,3 +202,23 @@ dialog.dlg::backdrop{background:rgba(15,22,25,.55)}
 .le-floors button.mine{background:var(--free);color:#fff;border-color:var(--free);cursor:default;opacity:1}
 .le-floors button.picked{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .le-sec{display:flex;flex-direction:column;gap:2px}
+
+/* Данни за сградата */
+dialog.bd{width:min(620px,calc(100% - 28px))}
+.bd-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;margin-top:12px}
+.bd-grid .wide{grid-column:1/-1}
+.bd-grid .field{margin-bottom:12px}
+.bd-grid input,.bd-grid textarea{border:1px solid var(--line);background:var(--paper);border-radius:2px;padding:9px 10px;width:100%;font:inherit}
+.bd-grid input:disabled{opacity:.7}
+.bd-grid .ok{color:var(--free);font-size:13px}
+.bd-grid .bad{color:var(--danger);font-size:13px}
+.bd-grid .muted{font-size:13px}
+.bd-pub{border-top:1px solid var(--line);padding-top:12px;margin-bottom:12px;display:flex;flex-direction:column;gap:10px}
+.bd-pub .warn{margin:0;font-size:14px;border-left:3px solid var(--reserved);padding:6px 10px;background:var(--paper)}
+.bd-code pre{background:var(--paper);border:1px solid var(--line);padding:10px;font-size:13px;overflow-x:auto;margin:6px 0 8px;white-space:pre}
+.tab.add{color:var(--muted);align-self:center;border:1px dashed var(--line);border-radius:3px;margin:0 0 6px 6px;padding:8px 14px}
+.tab.add:hover{color:var(--ink);border-color:var(--ink)}
+.fe-count{display:flex;align-items:center;gap:8px;font-size:14px}
+.fe-count button{min-width:32px;min-height:30px;border:1px solid var(--line);background:var(--paper);border-radius:3px;cursor:pointer;font-weight:700}
+.fe-count b{min-width:20px;text-align:center}
+@media (max-width:600px){.bd-grid{grid-template-columns:1fr}}
