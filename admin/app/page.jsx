@@ -231,6 +231,28 @@ function Dashboard({ session }) {
         </div>
 
         {building && <>
+          <section className="bhead" aria-label="Сграда">
+            <div className="bh-title">
+              <h1>{building.name}</h1>
+              <p>{building.district && <span>{building.district}</span>}
+                <span className={"pub " + (building.published ? "on" : "off")}>{building.published ? "Показва се на сайта" : "Скрита от сайта"}</span></p>
+            </div>
+            <div className="bh-actions">
+              <div className="btn-group" role="group" aria-label="Настройка на сградата">
+                <button onClick={() => setBdlg("edit")}>Данни и код</button>
+                <button onClick={() => setFacade(true)}>Фасада и входове</button>
+                <button onClick={() => setPlans(true)}>Разпределения</button>
+              </div>
+              <div className="btn-group" role="group" aria-label="Данни">
+                <button onClick={openHistory}>История</button>
+                <button onClick={() => downloadCsv(apts, building.name)} disabled={!apts.length}>Изтегли</button>
+                {canEdit && <button onClick={() => fileRef.current.click()}>Внеси от файл</button>}
+              </div>
+              {canEdit && <input ref={fileRef} type="file" accept=".xlsx,.csv" hidden onChange={onFile} />}
+              <a className="bh-link" href={`${WIDGET_ORIGIN}/embed.html?b=${building.slug}`} target="_blank" rel="noopener">Виж на сайта<span aria-hidden="true"> ↗</span></a>
+            </div>
+          </section>
+
           <div className="tally" aria-live="polite">
             <div className="free"><b>{count("free")}</b><span>свободни</span></div>
             <div className="reserved"><b>{count("reserved")}</b><span>резервирани</span></div>
@@ -243,7 +265,8 @@ function Dashboard({ session }) {
             <i className="sold" style={{ width: count("sold") / total * 100 + "%" }} />
           </div>
 
-          <div className="tools">
+          <div className="tcard">
+          <div className="tbar" role="search" aria-label="Филтри на таблицата">
             <input type="search" placeholder="Търсене по номер, напр. 5А" value={q} onChange={e => setQ(e.target.value)} aria-label="Търсене по номер" />
             {multi && <select value={secF} onChange={e => setSecF(e.target.value)} aria-label="Вход">
               <option value="">Всички входове</option>{secs.map(([k, n]) => <option key={k} value={k}>{n}</option>)}
@@ -254,15 +277,9 @@ function Dashboard({ session }) {
             <select value={status} onChange={e => setStatus(e.target.value)} aria-label="Статус">
               <option value="">Всички статуси</option>{Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
+            {(q || floor || status || secF) && <button className="linkbtn" onClick={() => { setQ(""); setFloor(""); setStatus(""); setSecF(""); }}>Изчисти</button>}
             <span className="spacer" />
-            <button className="btn ghost" onClick={() => setBdlg("edit")}>Данни и код</button>
-            <button className="btn ghost" onClick={() => setFacade(true)}>Фасада и входове</button>
-            <button className="btn ghost" onClick={() => setPlans(true)}>Разпределения</button>
-            <button className="btn ghost" onClick={openHistory}>История</button>
-            <button className="btn ghost" onClick={() => downloadCsv(apts, building.name)} disabled={!apts.length}>Изтегли таблицата</button>
-            {canEdit && <><button className="btn ghost" onClick={() => fileRef.current.click()}>Внеси от файл</button>
-              <input ref={fileRef} type="file" accept=".xlsx,.csv" hidden onChange={onFile} /></>}
-            <a className="btn ghost" href={`${WIDGET_ORIGIN}/embed.html?b=${building.slug}`} target="_blank" rel="noopener">Виж на сайта</a>
+            <span className="tcount">{list.length === apts.length ? `${apts.length} ${apts.length === 1 ? "апартамент" : "апартамента"}` : `${list.length} от ${apts.length}`}</span>
           </div>
 
           <div className="tablewrap">
@@ -274,6 +291,7 @@ function Dashboard({ session }) {
                 ))}</tbody>
               </table>
             )}
+          </div>
           </div>
         </>}
       </main>

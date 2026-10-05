@@ -31,12 +31,28 @@ button,input,select{font:inherit;color:inherit}
 .top .org{font:700 22px/1 var(--cond)}
 .top .spacer{flex:1}
 .top .who{font-size:14px;color:var(--muted)}
-.wrap{max-width:1240px;margin:0 auto;padding:20px 24px 60px}
+.wrap{max-width:1340px;margin:0 auto;padding:20px 24px 60px}
 .tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:18px}
 .tab{background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px 9px;cursor:pointer;text-align:left;margin-bottom:-1px}
 .tab b{display:block;font:700 19px/1.1 var(--cond)}
 .tab span{font-size:13px;color:var(--muted)}
 .tab[aria-selected="true"]{border-bottom-color:var(--brass)}
+
+/* Заглавна лента на сградата: действията са отделени от филтрите на таблицата */
+.bhead{display:flex;align-items:flex-end;justify-content:space-between;gap:14px 24px;flex-wrap:wrap;margin:0 0 16px}
+.bh-title h1{font:700 30px/1.05 var(--cond);margin:0}
+.bh-title p{margin:6px 0 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.pub{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.pub::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--sold)}
+.pub.on{color:var(--free)} .pub.on::before{background:var(--free)}
+.pub.off{color:var(--muted)}
+.bh-actions{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap}
+.btn-group{display:inline-flex;border:1px solid var(--ink);border-radius:3px;overflow:hidden;background:var(--surface)}
+.btn-group button{border:0;background:transparent;padding:8px 14px;min-height:38px;font-weight:600;font-size:15px;cursor:pointer;white-space:nowrap}
+.btn-group button+button{border-left:1px solid var(--line)}
+.btn-group button:hover:not(:disabled){background:var(--paper)}
+.btn-group button:disabled{opacity:.45;cursor:default}
+.bh-link{font-weight:600;color:var(--ink);text-underline-offset:3px;padding:8px 2px}
 
 /* Ред с наличността: единственото „силно“ място в интерфейса */
 .tally{display:flex;align-items:stretch;gap:0;margin:0 0 18px;border:1px solid var(--line);background:var(--surface)}
@@ -49,15 +65,19 @@ button,input,select{font:inherit;color:inherit}
 .bar i{display:block}
 .bar .free{background:var(--free)} .bar .reserved{background:var(--reserved)} .bar .sold{background:var(--sold)}
 
-.tools{display:flex;gap:10px 18px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
 a.btn{color:inherit;text-decoration:none;display:inline-flex;align-items:center}
-.tools input[type=search]{min-width:220px}
-.tools input,.tools select{border:1px solid var(--line);background:var(--surface);border-radius:2px;padding:7px 10px;min-height:38px}
-.tools .spacer{flex:1}
 
-.tablewrap{overflow-x:auto;border:1px solid var(--line);background:var(--surface)}
+/* Таблица с лентата за филтри като една карта */
+.tcard{border:1px solid var(--line);background:var(--surface)}
+.tbar{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;padding:10px 12px;background:var(--paper)}
+.tbar input,.tbar select{border:1px solid var(--line);background:var(--surface);border-radius:2px;padding:6px 10px;min-height:36px;font-size:15px}
+.tbar input[type=search]{min-width:220px}
+.tbar .spacer{flex:1}
+.tcount{font-size:14px;color:var(--muted)}
+
+.tablewrap{overflow-x:auto;border-top:1px solid var(--line);background:var(--surface)}
 table{border-collapse:collapse;width:100%;min-width:860px}
-th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle;white-space:nowrap}
 th{font-size:14px;color:var(--muted);font-weight:600;background:var(--paper);position:sticky;top:0}
 tr:last-child td{border-bottom:0}
 td.num{font:700 20px var(--cond)}
@@ -67,7 +87,7 @@ tr.flash td{animation:flash 1.4s ease-out}
 @keyframes flash{0%{background:color-mix(in srgb,var(--brass) 22%,transparent)}100%{background:transparent}}
 @media (prefers-reduced-motion:reduce){tr.flash td{animation:none}}
 
-.price{width:130px;border:1px solid var(--line);background:var(--paper);border-radius:2px;padding:6px 8px;text-align:right;font-variant-numeric:tabular-nums}
+.price{width:112px;border:1px solid var(--line);background:var(--paper);border-radius:2px;padding:6px 8px;text-align:right;font-variant-numeric:tabular-nums}
 .price:disabled{opacity:.6}
 .chk{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--muted);cursor:pointer}
 .chk input{accent-color:var(--ink);width:16px;height:16px}
@@ -96,7 +116,10 @@ tr.flash td{animation:flash 1.4s ease-out}
   .tally div:nth-child(-n+2){border-bottom:1px solid var(--line)}
   .tally b{font-size:26px}
   .bar{margin-top:-19px}
-  .tools input[type=search]{min-width:0;flex:1 1 100%}
+  .bhead{align-items:flex-start}
+  .bh-actions{width:100%}
+  .btn-group{flex-wrap:wrap}
+  .tbar input[type=search]{min-width:0;flex:1 1 100%}
 }
 
 /* Внасяне */
@@ -108,9 +131,9 @@ dialog.dlg::backdrop{background:rgba(15,22,25,.55)}
 .problems ul{margin:6px 0 0;padding-left:18px}
 .changes{max-height:340px;overflow:auto;border:1px solid var(--line);margin-bottom:16px}
 .changes table{min-width:0}
+.changes td{white-space:normal}
 .changes td.num{font-size:17px}
 .dlg-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
-.tools .btn:disabled{opacity:.5}
 
 /* История */
 .drawer{position:fixed;top:0;right:0;bottom:0;width:min(440px,100%);background:var(--surface);border-left:1px solid var(--line);box-shadow:-12px 0 40px rgba(0,0,0,.12);z-index:15;display:flex;flex-direction:column;padding:18px 20px}
@@ -195,6 +218,8 @@ dialog.dlg::backdrop{background:rgba(15,22,25,.55)}
 .le-grid .field{margin-bottom:8px}
 .le-grid input,.le-grid select{border:1px solid var(--line);background:var(--paper);border-radius:2px;padding:8px;width:100%}
 .fe-side .field input{border:1px solid var(--line);background:var(--paper);border-radius:2px;padding:9px 10px}
+.fe-side .field select{border:1px solid var(--line);background:var(--paper);border-radius:2px;padding:8px}
+.le-warn{font-size:13px;color:var(--reserved);margin-top:2px}
 .le-assign{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:8px}
 .le-assign .muted{margin:0;font-size:14px}
 .le-floors{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
@@ -230,5 +255,3 @@ dialog.bd{width:min(620px,calc(100% - 28px))}
 .del-btn{background:none;border:0;color:var(--danger);font-size:14px;cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:4px}
 .del-btn:disabled{color:var(--line);cursor:default;text-decoration:none}
 .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-.le-warn{font-size:13px;color:var(--reserved);margin-top:2px}
-.fe-side .field select{border:1px solid var(--line);background:var(--paper);border-radius:2px;padding:8px}
