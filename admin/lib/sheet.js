@@ -127,8 +127,9 @@ const fmt = n => new Intl.NumberFormat("bg-BG").format(Math.round(n)) + " €";
 export function downloadCsv(apts, buildingName) {
   const ROOMS = { 1: "Едностаен", 2: "Двустаен", 3: "Тристаен", 4: "Четиристаен" };
   const esc = v => { const s = String(v == null ? "" : v); return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-  const lines = [["Апартамент", "Етаж", "Тип", "Обща площ", "Цена", "Цена на сайта", "Статус"]];
-  for (const a of apts) lines.push([a.label, a.floor, ROOMS[a.rooms] || a.rooms, String(a.gross_area).replace(".", ","),
+  const multi = new Set(apts.map(a => a.sec)).size > 1;
+  const lines = [["Апартамент", ...(multi ? ["Вход"] : []), "Етаж", "Тип", "Обща площ", "Цена", "Цена на сайта", "Статус"]];
+  for (const a of apts) lines.push([a.label, ...(multi ? [a.secName] : []), a.floor, ROOMS[a.rooms] || a.rooms, String(a.gross_area).replace(".", ","),
     a.price == null ? "" : Math.round(a.price), a.price_visible ? "да" : "не", STATUS_OUT[a.status]]);
   const csv = "\uFEFF" + lines.map(r => r.map(esc).join(";")).join("\r\n");
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));

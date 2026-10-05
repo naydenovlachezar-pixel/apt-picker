@@ -9,6 +9,13 @@ const ROOMS = { 1: "Едностаен", 2: "Двустаен", 3: "Триста
 const nf = new Intl.NumberFormat("bg-BG");
 const m2 = n => Number(n).toLocaleString("bg-BG", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " m²";
 
+// Апартаментите с вход и етаж, подредени по вход, етаж и номер
+const shape = data => (data || []).map(a => {
+  const f = a.floor || {}, sc = f.section || {};
+  return { ...a, floor: f.number == null ? null : f.number, sec: sc.key || "A", secName: sc.name || "", secOrder: sc.sort_order || 0 };
+}).sort((a, b) => a.secOrder - b.secOrder || a.sec.localeCompare(b.sec) || a.floor - b.floor || a.unit_key.localeCompare(b.unit_key));
+const APT_FIELDS = "id, code, label, unit_key, rooms, gross_area, net_area, price, price_visible, status, updated_at, floor:floors(number, section:sections(key, name, sort_order))";
+
 export default function Page() {
   const [session, setSession] = useState(undefined);
   useEffect(() => {
@@ -68,6 +75,7 @@ function Dashboard({ session }) {
   const [q, setQ] = useState("");
   const [floor, setFloor] = useState("");
   const [status, setStatus] = useState("");
+  const [secF, setSecF] = useState("");
   const [busy, setBusy] = useState({});
   const [flash, setFlash] = useState({});
   const [toast, setToast] = useState(null);
@@ -103,25 +111,21 @@ function Dashboard({ session }) {
   }, [orgId]);
 
   function loadApts() {
-    return sb.from("apartments")
-      .select("id, code, label, unit_key, rooms, gross_area, net_area, price, price_visible, status, updated_at, floor:floors(number)")
-      .eq("building_id", bid)
+    return sb.from("apartments").select(APT_FIELDS).eq("building_id", bid)
       .then(({ data, error }) => {
         if (error) return say("Апартаментите не се заредиха: " + error.message, true);
-        setApts((data || []).map(a => ({ ...a, floor: a.floor ? a.floor.number : null })).sort((a, b) => a.floor - b.floor || a.unit_key.localeCompare(b.unit_key)));
+        setApts(shape(data));
       });
   }
 
   useEffect(() => {
     if (!bid) return;
-    setLoading(true); setFloor(""); setQ("");
-    sb.from("apartments")
-      .select("id, code, label, unit_key, rooms, gross_area, net_area, price, price_visible, status, updated_at, floor:floors(number)")
-      .eq("building_id", bid)
+    setLoading(true); setFloor(""); setQ(""); setSecF("");
+    sb.from("apartments").select(APT_FIELDS).eq("building_id", bid)
       .then(({ data, error }) => {
         setLoading(false);
         if (error) return say("Апартаментите не се заредиха: " + error.message, true);
-        setApts((data || []).map(a => ({ ...a, floor: a.floor ? a.floor.number : null })).sort((a, b) => a.floor - b.floor || a.unit_key.localeCompare(b.unit_key)));
+        setApts(shape(data));
       });
   }, [bid]);
 
@@ -130,7 +134,7 @@ function Dashboard({ session }) {
     if (!bid) return;
     const ch = sb.channel("admin-" + bid)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "apartments", filter: `building_id=eq.${bid}` }, p => {
-        setApts(list => list.map(a => a.id === p.new.id ? { ...a, status: p.new.status, price: p.new.price, price_visible: p.new.price_visible, updated_at: p.new.updated_at } : a));
+        setApts(list => list.map(a => a.id === p.new.id ? { ...a, status: p.new.status, price: p.new.price, price_visible: p.new.price_visible, label: p.new.label, updated_at: p.new.updated_at } : a));
         mark(p.new.id);
       })
       .subscribe(s => setLive(s === "SUBSCRIBED"));
@@ -179,7 +183,9 @@ function Dashboard({ session }) {
   }
 
   const floors = useMemo(() => [...new Set(apts.map(a => a.floor))].sort((a, b) => a - b), [apts]);
-  const list = apts.filter(a => (!floor || a.floor === +floor) && (!status || a.status === status) && (!q || a.label.toLowerCase().includes(q.toLowerCase()) || a.code.toLowerCase().includes(q.toLowerCase())));
+  const secs = useMemo(() => { const m = new Map(); apts.forEach(a => m.set(a.sec, a.secName)); return [...m.entries()]; }, [apts]);
+  const multi = secs.length > 1;
+  const list = apts.filter(a => (!secF || a.sec === secF) && (!floor || a.floor === +floor) && (!status || a.status === status) && (!q || a.label.toLowerCase().includes(q.toLowerCase()) || a.code.toLowerCase().includes(q.toLowerCase())));
   const count = s => apts.filter(a => a.status === s).length;
   const total = apts.length || 1;
 
@@ -226,6 +232,9 @@ function Dashboard({ session }) {
 
           <div className="tools">
             <input type="search" placeholder="Търсене по номер, напр. 5А" value={q} onChange={e => setQ(e.target.value)} aria-label="Търсене по номер" />
+            {multi && <select value={secF} onChange={e => setSecF(e.target.value)} aria-label="Вход">
+              <option value="">Всички входове</option>{secs.map(([k, n]) => <option key={k} value={k}>{n}</option>)}
+            </select>}
             <select value={floor} onChange={e => setFloor(e.target.value)} aria-label="Етаж">
               <option value="">Всички етажи</option>{floors.map(f => <option key={f} value={f}>Етаж {f}</option>)}
             </select>
@@ -233,7 +242,7 @@ function Dashboard({ session }) {
               <option value="">Всички статуси</option>{Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
             <span className="spacer" />
-            <button className="btn ghost" onClick={() => setFacade(true)}>Фасада</button>
+            <button className="btn ghost" onClick={() => setFacade(true)}>Фасада и входове</button>
             <button className="btn ghost" onClick={openHistory}>История</button>
             <button className="btn ghost" onClick={() => downloadCsv(apts, building.name)} disabled={!apts.length}>Изтегли таблицата</button>
             {canEdit && <><button className="btn ghost" onClick={() => fileRef.current.click()}>Внеси от файл</button>
@@ -244,9 +253,9 @@ function Dashboard({ session }) {
           <div className="tablewrap">
             {loading ? <p className="empty">Зареждане на апартаментите…</p> : !list.length ? <p className="empty">Няма апартаменти с тези филтри.</p> : (
               <table>
-                <thead><tr><th>Апартамент</th><th>Етаж</th><th>Тип</th><th className="r">Обща площ</th><th className="r">Цена, €</th><th>Цена на сайта</th><th>Статус</th></tr></thead>
+                <thead><tr><th>Апартамент</th>{multi && <th>Вход</th>}<th>Етаж</th><th>Тип</th><th className="r">Обща площ</th><th className="r">Цена, €</th><th>Цена на сайта</th><th>Статус</th></tr></thead>
                 <tbody>{list.map(a => (
-                  <Row key={a.id} a={a} canEdit={canEdit} busy={!!busy[a.id]} flash={!!flash[a.id]} save={save} />
+                  <Row key={a.id} a={a} multi={multi} canEdit={canEdit} busy={!!busy[a.id]} flash={!!flash[a.id]} save={save} />
                 ))}</tbody>
               </table>
             )}
@@ -254,14 +263,14 @@ function Dashboard({ session }) {
         </>}
       </main>
       {importing && <ImportDialog im={importing} building={building} onCancel={() => setImporting(null)} onApply={applyImport} />}
-      {facade && building && <FacadeEditor building={building} orgId={orgId} canEdit={canEdit} onClose={() => setFacade(false)} />}
+      {facade && building && <FacadeEditor building={building} orgId={orgId} canEdit={canEdit} onClose={() => setFacade(false)} onSaved={loadApts} />}
       {history && <HistoryPanel h={history} building={building} onClose={() => setHistory(null)} />}
       {toast && <div className={"toast" + (toast.isErr ? " err" : "")} role="status">{toast.text}</div>}
     </>
   );
 }
 
-function Row({ a, canEdit, busy, flash, save }) {
+function Row({ a, multi, canEdit, busy, flash, save }) {
   const shown = a.price == null ? "" : nf.format(Math.round(a.price));
   const [price, setPrice] = useState(shown);
   useEffect(() => { setPrice(shown); }, [a.price]);
@@ -274,6 +283,7 @@ function Row({ a, canEdit, busy, flash, save }) {
   return (
     <tr className={(busy ? "saving " : "") + (flash ? "flash" : "")}>
       <td className="num">{a.label}</td>
+      {multi && <td>{a.secName}</td>}
       <td>{a.floor}</td>
       <td>{ROOMS[a.rooms] || a.rooms + " стаи"}</td>
       <td className="r">{m2(a.gross_area)}</td>
