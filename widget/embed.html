@@ -1,0 +1,725 @@
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Избор на апартамент</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400;500;600;700&family=Sofia+Sans+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>:root{
+  --paper:#EDEEEA; --surface:#F8F8F5; --ink:#1E2B30; --muted:#5B686D; --line:#CDD1CA;
+  --brass:#9C6A12; --free:#2E8A5E; --reserved:#C98E1C; --sold:#8E979B; --on-status:#FFFFFF;
+  --sky-top:#C3D2D9; --sky-bottom:#E8ECE9; --hill:#CAD3CB; --ground:#B7C1B6; --tree:#7E9A83;
+  --wall:#F5F5F2; --side:#D3D7D1; --glass:#7D95A1; --slab:#DCDDD7; --rail:#A7BCC5;
+  --font:"Sofia Sans", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --cond:"Sofia Sans Condensed", "Sofia Sans", "Arial Narrow", system-ui, sans-serif;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --paper:#151B1E; --surface:#1D2528; --ink:#E3E7E2; --muted:#98A4A7; --line:#344140;
+    --brass:#D8A64B; --free:#4DB483; --reserved:#E2AE48; --sold:#66727A; --on-status:#0F1A15;
+    --sky-top:#0E1618; --sky-bottom:#1B2528; --hill:#1F2A2A; --ground:#243030; --tree:#33483C;
+    --wall:#3A4447; --side:#2B3437; --glass:#4F6874; --slab:#475155; --rail:#5E7A86;
+    color-scheme:dark;
+  }}
+:root[data-theme="dark"]{
+  --paper:#151B1E; --surface:#1D2528; --ink:#E3E7E2; --muted:#98A4A7; --line:#344140;
+  --brass:#D8A64B; --free:#4DB483; --reserved:#E2AE48; --sold:#66727A; --on-status:#0F1A15;
+  --sky-top:#0E1618; --sky-bottom:#1B2528; --hill:#1F2A2A; --ground:#243030; --tree:#33483C;
+  --wall:#3A4447; --side:#2B3437; --glass:#4F6874; --slab:#475155; --rail:#5E7A86;
+  color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 var(--font);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+.app{max-width:1320px;margin:0 auto;padding:24px 20px 40px}
+.dot{width:11px;height:11px;border-radius:50%;flex:none;display:inline-block}
+.dot.free{background:var(--free)}
+.dot.reserved{background:var(--reserved)}
+.dot.sold{background:var(--sold)}
+.filters{display:flex;flex-wrap:wrap;align-items:center;gap:14px 28px;padding:14px 0 18px;border-top:1px solid var(--line);margin-bottom:18px}
+.fgroup{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.flabel{font-weight:600;font-size:15px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 13px;font-size:15px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;min-height:34px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.chip:hover{border-color:var(--ink)}
+select{border:1px solid var(--line);background:var(--surface);border-radius:2px;padding:5px 8px;min-height:34px}
+input[type=range]{accent-color:var(--ink);width:170px}
+output{font:600 16px var(--cond);min-width:84px;display:inline-block}
+.linkbtn{background:none;border:0;padding:4px 0;text-decoration:underline;text-underline-offset:3px;cursor:pointer;color:var(--muted);font-size:15px}
+.linkbtn:hover{color:var(--ink)}
+.stage{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(300px,1fr);gap:20px;align-items:start}
+.canvas{position:relative;border:1px solid var(--line);background:var(--surface);border-radius:3px;overflow:hidden}
+.canvas-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.canvas-head h2{font:700 22px/1.1 var(--cond);margin:0}
+.canvas-head .muted{color:var(--muted);font-size:15px}
+.canvas-head .spacer{flex:1}
+.canvas svg{display:block;width:100%;height:auto}
+.side{border:1px solid var(--line);background:var(--surface);border-radius:3px;padding:18px 18px 20px;position:sticky;top:calc(12px + env(safe-area-inset-top,0px))}
+.side h2{font:700 22px/1.15 var(--cond);margin:0}
+.side .hint{color:var(--muted);margin:6px 0 14px;font-size:15px}
+.side-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px}
+.btn{border:1px solid var(--ink);background:transparent;border-radius:2px;padding:10px 16px;cursor:pointer;font-weight:600;min-height:42px}
+.btn:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)}
+.btn.primary{background:var(--ink);color:var(--paper)}
+.btn.primary:hover{background:color-mix(in srgb,var(--ink) 86%,var(--brass))}
+.btn.ghost{border-color:var(--line);padding:6px 12px;min-height:36px;font-weight:500}
+.btn.icon{padding:6px 10px;min-width:38px;min-height:36px;border-color:var(--line)}
+.btn:disabled{opacity:.4;cursor:default}
+:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
+.results{list-style:none;margin:0;padding:0;max-height:640px;overflow:auto;border-top:1px solid var(--line)}
+.row{width:100%;display:grid;grid-template-columns:12px 52px 1fr auto;align-items:center;gap:10px;padding:10px 6px;background:none;border:0;border-bottom:1px solid var(--line);text-align:left;cursor:pointer}
+.row:hover{background:var(--paper)}
+.row .num{font:700 19px var(--cond)}
+.row .meta{font-size:14px;color:var(--muted);line-height:1.3}
+.row .meta b{color:var(--ink);font-weight:600}
+.row .pr{font:600 16px var(--cond);text-align:right;white-space:nowrap}
+.row .pr.sold{color:var(--muted);font-weight:500}
+.empty{padding:18px 4px;color:var(--muted)}
+.floor-hit{fill:var(--brass);fill-opacity:0;stroke:var(--brass);stroke-opacity:0;stroke-width:3;cursor:pointer;outline:none}
+.floor-hit:hover,.floor-hit:focus-visible,.floor-hit.hover{fill-opacity:.3;stroke-opacity:1}
+.floor-hit.out{fill:var(--paper);fill-opacity:.6;stroke-opacity:0}
+.floor-hit.out:hover,.floor-hit.out:focus-visible{fill:var(--brass);fill-opacity:.18;stroke-opacity:.6}
+.pill rect{fill:var(--free)}
+.pill.none rect{fill:var(--sold)}
+.pill text{fill:var(--on-status);font:600 13px var(--cond)}
+@media (prefers-reduced-motion:no-preference){.floor-hit,.unit{transition:fill-opacity .15s,stroke-opacity .15s}}
+.plan{background:var(--surface)}
+.p-outer{fill:none;stroke:var(--ink);stroke-width:10;stroke-linejoin:miter}
+.p-balc{fill:var(--paper);stroke:var(--ink);stroke-width:2}
+.p-extra{fill:var(--paper);stroke:var(--ink);stroke-width:4}
+.p-extra.hatch{fill:url(#hatch)}
+.p-wall{stroke:var(--ink);stroke-width:3;fill:none;pointer-events:none}
+.room{fill:var(--muted);font:500 15px var(--font);text-anchor:middle}
+.extra-lbl{fill:var(--muted);font:500 14px var(--font);text-anchor:middle}
+.unit{stroke:var(--ink);stroke-width:4;stroke-linejoin:round;cursor:pointer;outline:none}
+.unit.free{fill:var(--free);fill-opacity:.26}
+.unit.reserved{fill:var(--reserved);fill-opacity:.3}
+.unit.sold{fill:var(--sold);fill-opacity:.34}
+.unit:hover,.unit:focus-visible{fill-opacity:.52}
+.unit.dim{fill-opacity:.06}
+.unit.dim:hover{fill-opacity:.16}
+.lbls.dim{opacity:.35}
+.tag{fill:var(--ink);font:700 30px var(--cond);text-anchor:middle}
+.tag-sub{fill:var(--ink);font:500 15px var(--font);text-anchor:middle}
+.tag-st{font:600 14px var(--font);text-anchor:middle}
+.tag-st.free{fill:var(--free)}
+.tag-st.reserved{fill:var(--reserved)}
+.tag-st.sold{fill:var(--muted)}
+.sel-ring{fill:none;stroke:var(--brass);stroke-width:8;stroke-linejoin:round;pointer-events:none}
+.compass circle{fill:none;stroke:var(--muted);stroke-width:1.5}
+.compass path{fill:var(--muted)}
+.compass text{fill:var(--muted);font:600 14px var(--cond)}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.badge{border-radius:999px;padding:3px 11px;font-size:14px;font-weight:600;color:var(--on-status);white-space:nowrap}
+.badge.free{background:var(--free)}
+.badge.reserved{background:var(--reserved)}
+.badge.sold{background:var(--sold)}
+.type{margin:2px 0 14px;color:var(--muted)}
+.price{font:700 38px/1 var(--cond);letter-spacing:-0.01em}
+.price.sold{font-size:28px;color:var(--muted)}
+.ppm{color:var(--muted);font-size:15px;margin-top:4px}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin:18px 0 20px;padding:16px 0 0;border-top:1px solid var(--line)}
+.facts div{min-width:0}
+.facts dt{font-size:14px;color:var(--muted)}
+.facts dd{margin:0;font:600 18px/1.25 var(--cond)}
+.facts .wide{grid-column:1/-1}
+.actions{display:flex;flex-direction:column;gap:8px}
+.closebtn{margin-top:12px}
+.tip{position:absolute;z-index:5;pointer-events:none;background:var(--ink);color:var(--paper);padding:9px 12px;border-radius:3px;font-size:14px;line-height:1.35;max-width:220px;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+.tip b{font:700 17px var(--cond);display:block}
+dialog{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:3px;padding:0;width:min(500px,calc(100% - 28px));max-height:calc(100% - 40px)}
+dialog::backdrop{background:rgba(15,22,25,.55)}
+.dlg{padding:22px 22px 20px}
+.dlg h2{font:700 24px/1.15 var(--cond);margin:0 0 4px}
+.dlg .sub{color:var(--muted);margin:0 0 16px;font-size:15px}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.field label{font-size:14px;font-weight:600}
+.field input,.field textarea{border:1px solid var(--line);background:var(--paper);border-radius:2px;padding:9px 10px;width:100%}
+.field textarea{min-height:84px;resize:vertical}
+.field .err{color:#B3402B;font-size:13px;min-height:0}
+.consent{display:flex;gap:8px;align-items:flex-start;font-size:14px;color:var(--muted);margin:4px 0 16px}
+.consent input{margin-top:3px;accent-color:var(--ink)}
+.dlg-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+details{margin:14px 0 16px;border:1px solid var(--line);border-radius:2px;padding:8px 12px;background:var(--paper)}
+summary{cursor:pointer;font-weight:600;font-size:15px}
+pre{white-space:pre;overflow-x:auto;font-size:12px;line-height:1.45;margin:10px 0 0;max-height:260px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:3px;font-size:15px;opacity:0;pointer-events:none;max-width:calc(100% - 32px);z-index:20}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:no-preference){.toast{transition:opacity .2s}}
+@media (max-width:900px){.stage{grid-template-columns:1fr}.side{position:static}.results{max-height:none}}
+@media (max-width:520px){input[type=range]{width:140px}.filters{gap:12px 18px}}
+.app{padding-top:0}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:4px}
+.tab{background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px 9px;cursor:pointer;text-align:left;margin-bottom:-1px}
+.tab b{display:block;font:700 19px/1.1 var(--cond)}
+.tab span{font-size:13px;color:var(--muted)}
+.tab[aria-selected="true"]{border-bottom-color:var(--brass)}
+.tab:hover b{text-decoration:underline;text-underline-offset:3px}
+.scope{display:flex;gap:6px;margin:0 0 12px}
+.row .bname{display:block;font-size:13px;color:var(--brass);font-weight:600}
+.fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:15;background:var(--brass);color:#fff;border:0;border-radius:999px;padding:12px 18px;font-weight:700;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.2);display:flex;gap:8px;align-items:center}
+.fab[hidden]{display:none}
+.fab .cnt{background:rgba(0,0,0,.25);border-radius:999px;padding:0 8px;font-size:14px}
+.crm{position:fixed;top:0;right:0;bottom:0;width:min(420px,100%);z-index:16;background:var(--surface);border-left:1px solid var(--line);box-shadow:-12px 0 40px rgba(0,0,0,.15);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.crm[hidden]{display:none}
+.crm-head{padding:18px 18px 12px;border-bottom:1px solid var(--line)}
+.crm-head h2{font:700 24px var(--cond);margin:0 0 6px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.crm-head p{margin:0;color:var(--muted);font-size:14px}
+.crm-tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.crm-list{overflow:auto;padding:12px 18px 24px;flex:1}
+.deal{border:1px solid var(--line);border-radius:3px;padding:12px;margin-bottom:10px;background:var(--paper)}
+.deal-top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.deal-top b{font:700 18px var(--cond)}
+.deal-top span{font-size:13px;color:var(--muted)}
+.deal .who{font-size:14px;color:var(--muted);margin:2px 0 10px}
+.deal select{width:100%}
+.deal .eff{font-size:13px;margin-top:6px;display:flex;align-items:center;gap:6px}
+.deal.won{border-color:var(--sold)}
+.deal.reserved{border-color:var(--reserved)}
+.crm-empty{color:var(--muted);font-size:15px;padding:10px 0}
+.flash{animation:flash 1.2s ease-out}
+@keyframes flash{0%{background:color-mix(in srgb,var(--brass) 30%,transparent)}100%{background:transparent}}
+@media (prefers-reduced-motion:reduce){.flash{animation:none}}
+.pf{width:100%;background-size:100% 100%;background-repeat:no-repeat;position:relative}
+.pf-svg{display:block;width:100%;height:100%}
+.floor-hit.photo{fill:var(--brass);fill-opacity:0;stroke:#fff;stroke-opacity:0;stroke-width:3}
+.floor-hit.photo:hover,.floor-hit.photo:focus-visible{fill:#E0A840;fill-opacity:.42;stroke-opacity:.95}
+.floor-hit.photo.out{fill:#0B1114;fill-opacity:.55}
+.floor-hit.photo.out:hover,.floor-hit.photo.out:focus-visible{fill:#E0A840;fill-opacity:.25}
+.pf-tag{fill:rgba(15,22,25,.72)}
+.pf-tag-t{fill:#fff;font-family:var(--cond);font-weight:600;text-anchor:middle}
+.pf-mark .pill rect{filter:drop-shadow(0 1px 3px rgba(0,0,0,.35))}
+.pf-mark .pill text{fill:#fff;font-family:var(--cond);font-weight:600}
+.pf-mark .pill.none rect{fill:#3A4246;fill-opacity:.9}
+html.embedded,html.embedded body{background:transparent}
+.wrap{max-width:1320px;margin:0 auto;padding:4px 2px 8px}
+html.embedded .wrap{padding:2px 2px 8px}
+html.embedded .side{position:static}
+html.embedded .fab{top:calc(var(--vp-top) + var(--vp-h) - 64px);bottom:auto}
+html.embedded .crm{top:var(--vp-top);bottom:auto;height:var(--vp-h)}
+html.embedded .toast{top:calc(var(--vp-top) + var(--vp-h) - 76px);bottom:auto}
+html.embedded dialog{position:fixed;inset:calc(var(--vp-top) + 20px) 0 auto 0;margin:0 auto;max-height:calc(var(--vp-h) - 40px);overflow:auto}
+.tabs[hidden]{display:none}
+.powered{font-size:12px;color:var(--muted);text-align:right;margin-top:8px}
+.powered a{color:inherit}.state{padding:60px 20px;text-align:center;color:var(--muted)}
+.state code{background:var(--paper);padding:1px 6px;border-radius:3px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="tabs" id="tabs" role="tablist" aria-label="Сгради"></div>
+  <section class="filters" aria-label="Филтри">
+    <div class="fgroup"><span class="flabel" id="lbl-rooms">Стаи</span><div class="chips" id="f-rooms" role="group" aria-labelledby="lbl-rooms"></div></div>
+    <div class="fgroup"><label class="flabel" for="f-price">Цена до</label><input type="range" id="f-price"><output id="f-price-out" for="f-price"></output></div>
+    <div class="fgroup"><span class="flabel">Етаж</span>
+      <select id="f-fmin" aria-label="Етаж от"></select><span aria-hidden="true">до</span><select id="f-fmax" aria-label="Етаж до"></select></div>
+    <div class="fgroup"><span class="flabel" id="lbl-status">Статус</span><div class="chips" id="f-status" role="group" aria-labelledby="lbl-status"></div></div>
+    <button class="linkbtn" id="f-reset" type="button">Изчисти филтрите</button>
+  </section>
+  <div class="stage">
+    <div class="canvas" id="canvas"></div>
+    <aside class="side" id="side" aria-live="polite"></aside>
+  </div>
+  <p class="powered">Интерактивен избор на апартамент, демо версия</p>
+</div>
+<button class="fab" type="button" data-action="crm-open" aria-controls="crm">CRM демо <span class="cnt" id="fab-cnt">0</span></button>
+<aside class="crm" id="crm" hidden aria-label="CRM демо">
+  <div class="crm-head">
+    <h2>Сделки <button class="btn icon" data-action="crm-close" aria-label="Затвори">✕</button></h2>
+    <p>Симулация на HubSpot. Всяко запитване става сделка. Сменете етапа и вижте как апартаментът се обновява навсякъде.</p>
+    <div class="crm-tools"><button class="btn ghost" data-action="crm-test">Добави тестово запитване</button><button class="btn ghost" data-action="crm-reset">Нулирай демото</button></div>
+  </div>
+  <div class="crm-list" id="crm-list"></div>
+</aside>
+<dialog id="inq" aria-labelledby="inq-title"><div class="dlg" id="inq-body"></div></dialog>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(() => {
+const CONFIG = { developer: "Линия Девелопмънт", placement: "developer-site", source: "apartment-picker",
+  hubspot: { portalId: "PORTAL_ID", formGuid: "FORM_GUID" }, storageKey: "aptdemo:v1" };
+const STATUS = { free: { label: "Свободен", plural: "Свободни" }, reserved: { label: "Резервиран", plural: "Резервирани" }, sold: { label: "Продаден", plural: "Продадени" } };
+const ROOM_NAMES = { 1: "Едностаен", 2: "Двустаен", 3: "Тристаен", 4: "Четиристаен" };
+const STAGES = {
+  new: { label: "Ново запитване", eff: null },
+  viewing: { label: "Насрочен оглед", eff: null },
+  reserved: { label: "Резервация", eff: "reserved" },
+  won: { label: "Спечелена (Closed won)", eff: "sold" },
+  lost: { label: "Загубена (Closed lost)", eff: null }
+};
+
+function main(BUILDINGS, PHOTO, PHOTO_SRC, APTS_INPUT){
+/* ============ Реални визуализации: контури на етажите в пиксели на изображението ============ */
+const B = id => BUILDINGS.find(b => b.id === id);
+(function injectPhotos(){ const st = document.createElement("style");
+  st.textContent = Object.entries(PHOTO_SRC).map(([k, v]) => `.ph-${k}{background-image:url("${v}")}`).join("\n"); document.head.appendChild(st); })();
+const yAt = (line, x) => { if (x <= line[0][0]) return line[0][1]; for (let i = 1; i < line.length; i++){ const [x1, y1] = line[i-1], [x2, y2] = line[i]; if (x <= x2) return y1 + (y2 - y1) * (x - x1) / (x2 - x1); } return line[line.length-1][1]; };
+
+function photoFacade(b){
+  const P = PHOTO[b.id], sc = P.w / 760;
+  let s = `<div class="pf ph-${b.id}" style="aspect-ratio:${P.w}/${P.h}"><svg class="pf-svg" viewBox="0 0 ${P.w} ${P.h}" role="group" aria-label="Фасада на ${esc(b.name)}, изберете етаж">`;
+  let hits = "", marks = "";
+  for (let n = 1; n <= b.geo.floors; n++){
+    const F = P.floors[n], pts = [...F.t, ...[...F.b].reverse()].map(p => p.join(",")).join(" ");
+    const apts = floorApts(b.id, n), free = apts.filter(a => statusOf(a) === "free" && matchesBase(a));
+    const out = n < S.f.fmin || n > S.f.fmax;
+    hits += `<polygon class="floor-hit photo ${out ? "out" : ""}" points="${pts}" data-floor="${n}" tabindex="0" role="button" aria-label="Етаж ${n}, ${free.length ? free.length + " " + svobodni(free.length) : "няма свободни"} от ${apts.length}"/>`;
+    const ph = 26 * sc, pw = (free.length ? 104 : 124) * sc, tw = 58 * sc, pad = 10 * sc;
+    const xL = Math.max(F.t[0][0], F.b[0][0]), xR = Math.min(F.t[F.t.length-1][0], F.b[F.b.length-1][0]);
+    const tcx = xL + pad + tw / 2, pcx = xR - pad - pw / 2;
+    const my = x => (yAt(F.t, x) + yAt(F.b, x)) / 2;
+    const ty = my(tcx), py = my(pcx);
+    const txt = free.length ? `${free.length} ${svobodni(free.length)}` : "няма свободни";
+    marks += `<g class="pf-mark" pointer-events="none"><rect class="pf-tag" x="${tcx - tw/2}" y="${ty - ph/2}" width="${tw}" height="${ph}" rx="${ph/2}"/><text class="pf-tag-t" x="${tcx}" y="${ty + 5*sc}" style="font-size:${14*sc}px">Ет. ${n}</text>
+      <g class="pill ${free.length ? "" : "none"}"><rect x="${pcx - pw/2}" y="${py - ph/2}" width="${pw}" height="${ph}" rx="${ph/2}"/><text x="${pcx}" y="${py + 5*sc}" text-anchor="middle" style="font-size:${14*sc}px">${txt}</text></g></g>`;
+  }
+  return s + hits + marks + `</svg></div>`;
+}
+
+
+/* ============ Вграждане: параметри от сайта домакин ============ */
+const QP = new URLSearchParams(location.search);
+const EMBEDDED = window.parent !== window;
+const HOST_URL = QP.get("host") || document.referrer || location.href;
+const DEMO = QP.get("demo") === "1";
+if (QP.get("theme")) document.documentElement.dataset.theme = QP.get("theme");
+const ONLY = (QP.get("only") || "").split(",").filter(id => BUILDINGS.some(b => b.id === id));
+const VISIBLE = ONLY.length ? BUILDINGS.filter(b => ONLY.includes(b.id)) : BUILDINGS;
+const toParent = msg => { if (EMBEDDED) try { window.parent.postMessage(msg, "*"); } catch (e) {} };
+
+/* ============ Данни ============ */
+const APTS = APTS_INPUT;
+const aptByUid = uid => APTS.find(a => a.uid === uid);
+
+// Състояние на „CRM“: само сделки. Статусът на апартамента се извежда от тях.
+let STORE = { deals: [] };
+try { const raw = localStorage.getItem(CONFIG.storageKey); if (raw) STORE = JSON.parse(raw); if (!Array.isArray(STORE.deals)) STORE = { deals: [] }; } catch (e) {}
+const save = () => { try { localStorage.setItem(CONFIG.storageKey, JSON.stringify(STORE)); } catch (e) {} };
+function statusOf(a){
+  if (a.base === "sold") return "sold";
+  const ds = STORE.deals.filter(d => d.apt === a.uid);
+  if (ds.some(d => d.stage === "won")) return "sold";
+  if (ds.some(d => d.stage === "reserved")) return "reserved";
+  return a.base;
+}
+
+/* ============ Помощни ============ */
+const $ = s => document.querySelector(s);
+const nf = new Intl.NumberFormat("bg-BG");
+const eur = n => nf.format(n) + " €";
+const m2 = n => n.toLocaleString("bg-BG", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " m²";
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const svobodni = n => n === 1 ? "свободен" : "свободни";
+const aptsWord = n => n === 1 ? "апартамент" : "апартамента";
+const reduced = () => matchMedia("(prefers-reduced-motion:reduce)").matches;
+
+const PRICES = APTS.map(a => a.price).filter(v => v != null);
+const PRICE_MIN = PRICES.length ? Math.floor(Math.min(...PRICES) / 10000) * 10000 : 0;
+const PRICE_MAX = PRICES.length ? Math.ceil(Math.max(...PRICES) / 10000) * 10000 : 0;
+const S = { b: "bor", view: "building", floor: null, sel: null, sort: "floor", scope: "building",
+  f: { rooms: new Set(), max: PRICE_MAX, fmin: 1, fmax: 8, status: new Set(["free", "reserved", "sold"]) } };
+
+function matchesBase(a){
+  const f = S.f;
+  if (f.rooms.size && !f.rooms.has(Math.min(a.rooms, 4))) return false;
+  if (a.b === S.b && (a.floor < f.fmin || a.floor > f.fmax)) return false;
+  return a.price == null || a.price <= f.max;
+}
+const matches = a => matchesBase(a) && S.f.status.has(statusOf(a));
+const bApts = id => APTS.filter(a => a.b === id);
+const floorApts = (id, n) => APTS.filter(a => a.b === id && a.floor === n);
+const countBy = (list, st) => list.filter(a => statusOf(a) === st).length;
+
+/* ============ Фасада ============ */
+const facadeSVG = b => photoFacade(b);
+
+/* ============ Разпределение ============ */
+function planSVG(b, n){
+  const L = b.layouts[b.floorLayout(n)];
+  let s = `<svg class="plan" viewBox="0 0 1000 560" role="group" aria-label="Разпределение на етаж ${n}">
+    <defs><pattern id="hatch" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="10" height="10" style="fill:var(--paper)"/><line x1="0" y1="0" x2="0" y2="10" style="stroke:var(--line);stroke-width:4"/></pattern></defs>`;
+  L.balconies.forEach(([x, y, w, h]) => s += `<rect class="p-balc" x="${x}" y="${y}" width="${w}" height="${h}"/>`);
+  L.extras.forEach(e => s += `<polygon class="p-extra ${e.hatch ? "hatch" : ""}" points="${e.poly}"/>`);
+  let lbls = "", ring = "";
+  for (const [key, u] of Object.entries(L.units)){
+    const a = aptByUid(`${b.id}:${n}${key}`), st = statusOf(a), ok = matches(a);
+    s += `<polygon class="unit ${st} ${ok ? "" : "dim"}" points="${u.poly}" data-uid="${a.uid}" tabindex="0" role="button" aria-label="Апартамент ${a.label}, ${ROOM_NAMES[a.rooms].toLowerCase()}, ${m2(a.gross)}, ${STATUS[st].label.toLowerCase()}"/>`;
+    u.walls.forEach(d => s += `<path class="p-wall" d="${d}"/>`);
+    const [tx, ty] = u.tag;
+    lbls += `<g class="lbls ${ok ? "" : "dim"}" pointer-events="none">${u.rl.map(([x, y, t]) => `<text class="room" x="${x}" y="${y}">${t}</text>`).join("")}
+      <text class="tag" x="${tx}" y="${ty}">${a.label}</text><text class="tag-sub" x="${tx}" y="${ty+21}">${m2(a.gross)}</text><text class="tag-st ${st}" x="${tx}" y="${ty+40}">${STATUS[st].label}</text></g>`;
+    if (S.sel === a.uid) ring = `<polygon class="sel-ring" points="${u.poly}"/>`;
+  }
+  L.extras.forEach(e => lbls += `<text class="extra-lbl" x="${e.at[0]}" y="${e.at[1]}" pointer-events="none">${e.label}</text>`);
+  s += `<rect class="p-outer" x="40" y="60" width="920" height="440" pointer-events="none"/>` + lbls + ring;
+  s += `<g class="compass" transform="translate(70 532)"><circle r="15"/><path d="M-5 -4 L5 -4 L0 11 Z"/><text x="24" y="5">С</text></g>`;
+  return s + `</svg>`;
+}
+
+/* ============ Панели ============ */
+function rowHTML(a, showB){
+  const st = statusOf(a);
+  return `<li><button class="row" data-action="open-apt" data-uid="${a.uid}"><span class="dot ${st}" aria-hidden="true"></span><span class="num">${a.label}</span>
+    <span class="meta">${showB ? `<span class="bname">${esc(B(a.b).short)}</span>` : ""}<b>${ROOM_NAMES[a.rooms]}</b>, ${m2(a.gross)}<br>Етаж ${a.floor}, ${STATUS[st].label.toLowerCase()}</span>
+    <span class="pr ${st === "sold" || a.price == null ? "sold" : ""}">${st === "sold" ? "Продаден" : a.price == null ? "По запитване" : eur(a.price)}</span></button></li>`;
+}
+function resultsPanel(){
+  const all = S.scope === "all";
+  let list = APTS.filter(a => (all ? VISIBLE.some(b => b.id === a.b) : a.b === S.b) && matches(a));
+  list.sort(S.sort === "price" ? (a, b) => a.price - b.price : (a, b) => (a.b === b.b ? 0 : a.b < b.b ? -1 : 1) || a.floor - b.floor || a.unit.localeCompare(b.unit));
+  const n = list.length;
+  return `<div class="scope" role="group" aria-label="Обхват"><button class="chip" data-scope="building" aria-pressed="${!all}">Тази сграда</button><button class="chip" data-scope="all" aria-pressed="${all}">Всички проекти</button></div>
+    <div class="side-head"><h2>${n} ${aptsWord(n)}</h2><select id="sort" aria-label="Подреди"><option value="floor"${S.sort==="floor"?" selected":""}>По етаж</option><option value="price"${S.sort==="price"?" selected":""}>По цена</option></select></div>
+    <p class="hint">Посочете етаж на сградата или изберете апартамент от списъка.</p>
+    ${n ? `<ul class="results">${list.map(a => rowHTML(a, all)).join("")}</ul>` : `<p class="empty">Няма апартаменти с тези филтри. Разширете ценовия диапазон или изберете повече стаи.</p>`}`;
+}
+function floorPanel(b, n){
+  return `<h2>Етаж ${n}</h2><p class="hint">Изберете апартамент от разпределението, за да видите цена и подробности.</p><ul class="results">${floorApts(b.id, n).map(a => rowHTML(a, false)).join("")}</ul>`;
+}
+function cardPanel(a){
+  const st = statusOf(a), sold = st === "sold", b = B(a.b);
+  return `<div class="card-head"><h2 id="card-title" tabindex="-1">Апартамент ${a.label}</h2><span class="badge ${st}">${STATUS[st].label}</span></div>
+    <p class="type">${ROOM_NAMES[a.rooms]}, етаж ${a.floor}, ${esc(b.name)}</p>
+    ${sold ? `<div class="price sold">Продаден</div>` : a.price == null ? `<div class="price sold">Цена по запитване</div>` : `<div class="price">${eur(a.price)}</div><div class="ppm">${nf.format(Math.round(a.price / a.gross))} € за m² обща площ</div>`}
+    <dl class="facts"><div><dt>Обща площ</dt><dd>${m2(a.gross)}</dd></div><div><dt>Чиста площ</dt><dd>${m2(a.net)}</dd></div>
+      <div><dt>Стаи</dt><dd>${a.rooms}</dd></div><div><dt>${a.garden ? "Двор" : "Тераса"}</dt><dd>${a.terrace ? m2(a.terrace) : "Няма"}</dd></div>
+      <div class="wide"><dt>Изложение</dt><dd>${a.exposure}</dd></div><div class="wide"><dt>Етап</dt><dd>${esc(b.stage)}, ${esc(b.ready.toLowerCase())}</dd></div></dl>
+    <div class="actions"><button class="btn primary" data-action="inquire">${sold ? "Запитване за подобен апартамент" : "Запитване за този апартамент"}</button><button class="btn" data-action="pdf">Разпределение в PDF</button></div>
+    <button class="linkbtn closebtn" data-action="deselect">Затвори картата</button>`;
+}
+
+/* ============ Рендер ============ */
+function renderLanding(){
+  // Сайтът домакин получава обобщение за всяка сграда и може да изгради картите си от него.
+  toParent({ type: "apt-picker:stats", buildings: VISIBLE.map(b => {
+    const all = bApts(b.id), fp = all.filter(a => statusOf(a) === "free" && a.price != null).map(a => a.price);
+    return { id: b.id, name: b.name, short: b.short, district: b.district, stage: b.stage, ready: b.ready, desc: b.desc, floors: b.geo.floors,
+      total: all.length, free: countBy(all, "free"), reserved: countBy(all, "reserved"), sold: countBy(all, "sold"),
+      minPrice: fp.length ? Math.min(...fp) : null, img: PHOTO_SRC[b.id] };
+  }) });
+}
+function renderTabs(){
+  $("#tabs").hidden = VISIBLE.length < 2;
+  $("#tabs").innerHTML = VISIBLE.map(b => { const f = countBy(bApts(b.id), "free");
+    return `<button class="tab" role="tab" aria-selected="${b.id === S.b}" data-tab="${b.id}"><b>${esc(b.name)}</b><span>${esc(b.district)}, ${f} ${svobodni(f)}</span></button>`; }).join("");
+}
+function renderFilters(){
+  $("#f-rooms").innerHTML = [1, 2, 3, 4].map(r => `<button class="chip" data-room="${r}" aria-pressed="${S.f.rooms.has(r)}">${r === 4 ? "4+" : r}</button>`).join("");
+  $("#f-status").innerHTML = Object.keys(STATUS).map(k => `<button class="chip" data-status="${k}" aria-pressed="${S.f.status.has(k)}"><i class="dot ${k}"></i>${STATUS[k].label}</button>`).join("");
+  const p = $("#f-price"); p.min = PRICE_MIN; p.max = PRICE_MAX; p.step = 5000; p.value = S.f.max; $("#f-price-out").textContent = eur(S.f.max);
+  const N = B(S.b).geo.floors, opts = sel => Array.from({ length: N }, (_, i) => i + 1).map(n => `<option value="${n}"${n === sel ? " selected" : ""}>${n}</option>`).join("");
+  $("#f-fmin").innerHTML = opts(S.f.fmin); $("#f-fmax").innerHTML = opts(S.f.fmax);
+}
+function renderPicker(){
+  const b = B(S.b), c = $("#canvas"), side = $("#side");
+  if (S.view === "building"){
+    c.innerHTML = `<div class="canvas-head"><h2>Изберете етаж</h2><span class="muted">Броят показва свободните апартаменти според филтрите</span></div>` + facadeSVG(b) + `<div class="tip" id="tip" hidden></div>`;
+    side.innerHTML = resultsPanel();
+  } else {
+    const n = S.floor, apts = floorApts(b.id, n), free = countBy(apts, "free");
+    c.innerHTML = `<div class="canvas-head"><button class="btn ghost" data-action="back">‹ Цялата сграда</button><h2>Етаж ${n}</h2><span class="muted">${free} ${svobodni(free)} от ${apts.length}</span><span class="spacer"></span>
+      <button class="btn icon" data-action="floor-down" aria-label="Етаж по-долу" ${n <= 1 ? "disabled" : ""}>↓</button><button class="btn icon" data-action="floor-up" aria-label="Етаж по-горе" ${n >= b.geo.floors ? "disabled" : ""}>↑</button></div>` + planSVG(b, n);
+    side.innerHTML = S.sel ? cardPanel(aptByUid(S.sel)) : floorPanel(b, n);
+  }
+  syncHash();
+}
+function renderCRM(){
+  if (!DEMO) return;
+  $("#fab-cnt").textContent = STORE.deals.length;
+  const list = $("#crm-list");
+  if (!STORE.deals.length){ list.innerHTML = `<p class="crm-empty">Още няма сделки. Изпратете запитване от картата на апартамент или добавете тестово запитване.</p>`; return; }
+  list.innerHTML = [...STORE.deals].reverse().map(d => {
+    const a = aptByUid(d.apt); if (!a) return "";
+    const st = statusOf(a), eff = STAGES[d.stage].eff;
+    const t = new Date(d.t).toLocaleString("bg-BG", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    const note = a.base === "sold" ? "Апартаментът е продаден по-рано, статусът не се променя." : eff ? `На сайта: ${STATUS[eff].label.toLowerCase()}` : `На сайта: ${STATUS[st].label.toLowerCase()}`;
+    return `<div class="deal ${d.stage === "won" ? "won" : d.stage === "reserved" ? "reserved" : ""}" data-deal="${d.id}">
+      <div class="deal-top"><b>Ап. ${a.label}, ${esc(B(a.b).short)}</b><span>${t}</span></div>
+      <div class="who">${esc(d.name)}${d.phone ? ", " + esc(d.phone) : ""}</div>
+      <label class="visually-hidden" style="position:absolute;left:-9999px" for="st-${d.id}">Етап на сделката</label>
+      <select id="st-${d.id}" data-deal-stage="${d.id}">${Object.entries(STAGES).map(([k, v]) => `<option value="${k}"${k === d.stage ? " selected" : ""}>${v.label}</option>`).join("")}</select>
+      <div class="eff"><span class="dot ${st}" aria-hidden="true"></span>${note}</div></div>`;
+  }).join("");
+}
+function renderAll(){ renderLanding(); renderTabs(); renderPicker(); renderCRM(); }
+function syncHash(){
+  try { const p = new URLSearchParams(); p.set("b", S.b); if (S.view === "floor") p.set("floor", S.floor); if (S.sel) p.set("apt", S.sel.split(":")[1]);
+    history.replaceState(null, "", "#" + p.toString()); } catch (e) {}
+}
+
+/* ============ Навигация ============ */
+function setBuilding(id){
+  if (S.b !== id){ S.b = id; S.f.fmin = 1; S.f.fmax = B(id).geo.floors; }
+  S.view = "building"; S.floor = null; S.sel = null; renderFilters(); renderTabs(); renderPicker();
+}
+function scrollToPicker(){ toParent({ type: "apt-picker:scroll", y: 0 }); }
+function openFloor(n){ S.view = "floor"; S.floor = n; S.sel = null; renderPicker(); }
+function select(uid, focusCard){
+  const a = aptByUid(uid);
+  if (a.b !== S.b) { S.b = a.b; S.f.fmin = 1; S.f.fmax = B(a.b).geo.floors; renderFilters(); renderTabs(); }
+  S.view = "floor"; S.floor = a.floor; S.sel = uid; renderPicker();
+  if (focusCard){ const t = $("#card-title"); t && t.focus({ preventScroll: true }); }
+  if (matchMedia("(max-width:900px)").matches) { const y = $("#side").getBoundingClientRect().top + scrollY; EMBEDDED ? toParent({ type: "apt-picker:scroll", y }) : $("#side").scrollIntoView({ behavior: reduced() ? "auto" : "smooth", block: "start" }); }
+}
+
+document.addEventListener("click", e => {
+  const hit = e.target.closest(".floor-hit"); if (hit) return openFloor(+hit.dataset.floor);
+  const unit = e.target.closest(".unit"); if (unit) return select(unit.dataset.uid, false);
+  const sky = e.target.closest("[data-sky]"); if (sky){ setBuilding(sky.dataset.sky); return scrollToPicker(); }
+  const tab = e.target.closest("[data-tab]"); if (tab) return setBuilding(tab.dataset.tab);
+  const room = e.target.closest("[data-room]");
+  if (room){ const r = +room.dataset.room; S.f.rooms.has(r) ? S.f.rooms.delete(r) : S.f.rooms.add(r); renderFilters(); return renderPicker(); }
+  const st = e.target.closest("[data-status]");
+  if (st){ const k = st.dataset.status; S.f.status.has(k) ? S.f.status.delete(k) : S.f.status.add(k); renderFilters(); return renderPicker(); }
+  const sc = e.target.closest("[data-scope]"); if (sc){ S.scope = sc.dataset.scope; return renderPicker(); }
+  const btn = e.target.closest("[data-action]"); if (!btn) return;
+  const act = btn.dataset.action, b = B(S.b);
+  if (act === "open-apt") select(btn.dataset.uid, true);
+  else if (act === "goto-b") { setBuilding(btn.dataset.b); scrollToPicker(); }
+  else if (act === "back") { S.view = "building"; S.sel = null; renderPicker(); }
+  else if (act === "floor-up") openFloor(Math.min(b.geo.floors, S.floor + 1));
+  else if (act === "floor-down") openFloor(Math.max(1, S.floor - 1));
+  else if (act === "deselect") { S.sel = null; renderPicker(); }
+  else if (act === "inquire") openInquiry(aptByUid(S.sel));
+  else if (act === "pdf") { const a = aptByUid(S.sel); if (a && a.pdf) window.open(a.pdf, "_blank", "noopener"); else toast("За този апартамент още няма качено разпределение в PDF."); }
+  else if (act === "crm-open") { $("#crm").hidden = false; renderCRM(); $("#crm [data-action=crm-close]").focus(); }
+  else if (act === "crm-close") { $("#crm").hidden = true; }
+  else if (act === "crm-test") addTestDeal();
+  else if (act === "crm-reset") { STORE = { deals: [] }; save(); renderAll(); toast("Демото е нулирано. Статусите са върнати към началните."); }
+});
+document.addEventListener("keydown", e => {
+  const t = e.target;
+  if ((e.key === "Enter" || e.key === " ") && t.matches && t.matches("svg [role=button]")) { e.preventDefault(); t.dispatchEvent(new MouseEvent("click", { bubbles: true })); }
+  if (e.key === "Escape" && !$("#inq").open){
+    if (!$("#crm").hidden) { $("#crm").hidden = true; return; }
+    if (S.sel) { S.sel = null; renderPicker(); } else if (S.view === "floor") { S.view = "building"; renderPicker(); }
+  }
+});
+document.addEventListener("change", e => {
+  const id = e.target.id;
+  if (id === "sort") { S.sort = e.target.value; renderPicker(); }
+  if (id === "f-fmin" || id === "f-fmax"){ let a = +$("#f-fmin").value, c = +$("#f-fmax").value; if (a > c) [a, c] = [c, a]; S.f.fmin = a; S.f.fmax = c; renderFilters(); renderPicker(); }
+  if (e.target.dataset.dealStage) setStage(e.target.dataset.dealStage, e.target.value);
+});
+$("#f-price").addEventListener("input", e => { S.f.max = +e.target.value; $("#f-price-out").textContent = eur(S.f.max); renderPicker(); });
+$("#f-reset").addEventListener("click", () => { S.f = { rooms: new Set(), max: PRICE_MAX, fmin: 1, fmax: B(S.b).geo.floors, status: new Set(["free", "reserved", "sold"]) }; renderFilters(); renderPicker(); });
+
+$("#canvas").addEventListener("pointermove", e => {
+  const tip = $("#tip"); if (!tip) return;
+  const hit = e.target.closest(".floor-hit");
+  if (!hit || e.pointerType === "touch") { tip.hidden = true; return; }
+  const n = +hit.dataset.floor, apts = floorApts(S.b, n), free = apts.filter(a => statusOf(a) === "free" && matchesBase(a));
+  const fp = free.map(a => a.price).filter(v => v != null);
+  tip.innerHTML = `<b>Етаж ${n}</b>${free.length ? `${free.length} ${svobodni(free.length)} от ${apts.length}${fp.length ? `<br>от ${eur(Math.min(...fp))}` : ""}` : "Няма свободни според филтрите"}`;
+  tip.hidden = false;
+  const r = $("#canvas").getBoundingClientRect(); let x = e.clientX - r.left + 16; const y = e.clientY - r.top + 16;
+  if (x + 220 > r.width) x = e.clientX - r.left - 200;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+});
+$("#canvas").addEventListener("pointerleave", () => { const t = $("#tip"); if (t) t.hidden = true; });
+
+/* ============ CRM логика: етап на сделката → статус на апартамента ============ */
+function setStage(id, stage){
+  const d = STORE.deals.find(x => x.id === id); if (!d) return;
+  const a = aptByUid(d.apt), before = statusOf(a);
+  d.stage = stage; save();
+  const after = statusOf(a);
+  renderAll();
+  const el = document.querySelector(`[data-deal="${id}"]`); if (el) el.classList.add("flash");
+  if (before !== after) toast(`Апартамент ${a.label} в „${B(a.b).short}“ вече е ${STATUS[after].label.toLowerCase()}. Броячите и фасадите са обновени.`);
+}
+const TEST_NAMES = ["Мария Иванова", "Георги Петров", "Елена Димитрова", "Николай Стоянов", "Ивана Колева", "Стефан Николов"];
+function addTestDeal(){
+  const pool = APTS.filter(a => VISIBLE.some(b => b.id === a.b) && statusOf(a) === "free" && !STORE.deals.some(d => d.apt === a.uid));
+  if (!pool.length) return toast("Няма свободни апартаменти без сделка.");
+  const a = pool[Math.floor(Math.random() * pool.length)];
+  STORE.deals.push({ id: "d" + Date.now(), apt: a.uid, name: TEST_NAMES[STORE.deals.length % TEST_NAMES.length], phone: "0888 000 " + String(100 + STORE.deals.length).slice(-3), stage: "new", t: Date.now() });
+  save(); renderCRM(); $("#fab-cnt").textContent = STORE.deals.length;
+  toast(`Ново тестово запитване за апартамент ${a.label} в „${B(a.b).short}“.`);
+}
+
+/* ============ Запитване → HubSpot ============ */
+function openInquiry(a){
+  const dlg = $("#inq"), body = $("#inq-body"), b = B(a.b), sold = statusOf(a) === "sold";
+  const msg = sold ? `Здравейте, апартамент ${a.label} в ${b.name} е продаден. Интересувам се от подобен ${ROOM_NAMES[a.rooms].toLowerCase()} апартамент.`
+                   : `Здравейте, интересувам се от апартамент ${a.label} в ${b.name} (${ROOM_NAMES[a.rooms].toLowerCase()}, ${m2(a.gross)}, етаж ${a.floor}).`;
+  body.innerHTML = `<h2 id="inq-title">Запитване за апартамент ${a.label}</h2><p class="sub">${esc(b.name)}, етаж ${a.floor}, ${m2(a.gross)}</p>
+    <form id="inq-form" novalidate>
+      <div class="field"><label for="q-name">Име</label><input id="q-name" autocomplete="name" required><span class="err" id="e-name"></span></div>
+      <div class="field"><label for="q-phone">Телефон</label><input id="q-phone" type="tel" autocomplete="tel" required><span class="err" id="e-phone"></span></div>
+      <div class="field"><label for="q-email">Имейл</label><input id="q-email" type="email" autocomplete="email"><span class="err" id="e-email"></span></div>
+      <div class="field"><label for="q-msg">Съобщение</label><textarea id="q-msg">${esc(msg)}</textarea></div>
+      <label class="consent"><input type="checkbox" id="q-consent" required> Съгласен съм данните ми да бъдат използвани, за да се свържат с мен относно този имот.</label>
+      <div class="dlg-actions"><button type="button" class="btn" data-close>Отказ</button><button type="submit" class="btn primary">Изпрати запитването</button></div>
+    </form>`;
+  body.querySelector("[data-close]").onclick = () => dlg.close();
+  body.querySelector("#inq-form").onsubmit = ev => { ev.preventDefault(); submitInquiry(a); };
+  dlg.showModal(); $("#q-name").focus();
+}
+function submitInquiry(a){
+  const v = id => $(id).value.trim(); let ok = true;
+  const setErr = (id, t) => { $(id).textContent = t; if (t) ok = false; };
+  setErr("#e-name", v("#q-name") ? "" : "Въведете име.");
+  setErr("#e-phone", /^[+\d][\d\s-]{6,}$/.test(v("#q-phone")) ? "" : "Въведете телефон, например 0888 123 456.");
+  setErr("#e-email", !v("#q-email") || /^\S+@\S+\.\S+$/.test(v("#q-email")) ? "" : "Имейлът изглежда непълен.");
+  if (!$("#q-consent").checked) { ok = false; toast("Отбележете съгласието, за да изпратите запитването."); }
+  if (!ok) return;
+  const b = B(a.b), [first, ...rest] = v("#q-name").split(/\s+/), field = (name, value) => ({ objectTypeId: "0-1", name, value });
+  const payload = {
+    submittedAt: Date.now(),
+    fields: [field("firstname", first), field("lastname", rest.join(" ")), field("phone", v("#q-phone")), field("email", v("#q-email")), field("message", v("#q-msg")),
+      field("building_id", b.id), field("building_name", b.name), field("apartment_id", a.uid), field("apartment_label", a.label),
+      field("placement", EMBEDDED ? "embed" : CONFIG.placement), field("inquiry_source", CONFIG.source)].filter(f => f.value !== ""),
+    context: { pageUri: HOST_URL, pageName: EMBEDDED ? "Embedded apartment picker" : document.title },
+    legalConsentOptions: { consent: { consentToProcess: true, text: "Съгласие за обработка на данни за връзка относно имота." } }
+  };
+  const endpoint = `https://api.hsforms.com/submissions/v3/integration/submit/${CONFIG.hubspot.portalId}/${CONFIG.hubspot.formGuid}`;
+  STORE.deals.push({ id: "d" + Date.now(), apt: a.uid, name: v("#q-name"), phone: v("#q-phone"), stage: "new", t: Date.now() }); save(); renderCRM();
+  toParent({ type: "apt-picker:inquiry", building: b.id, buildingName: b.name, apartmentId: a.uid, apartmentLabel: a.label });
+  $("#inq-body").innerHTML = `<h2 id="inq-title">Запитването е изпратено</h2>
+    <p class="sub">${DEMO ? "В демото то се появява като нова сделка в CRM панела. Сменете етапа ѝ на „Резервация“ или „Спечелена“ и вижте как се променя апартаментът." : "Консултант ще се свърже с вас за този апартамент."}</p>
+    <details><summary>Какво получава HubSpot</summary><pre>POST ${esc(endpoint)}\n\n${esc(JSON.stringify(payload, null, 2))}</pre></details>
+    <div class="dlg-actions"><button class="btn" data-close>Затвори</button>${DEMO ? `<button class="btn primary" data-open-crm>Отвори CRM демото</button>` : ""}</div>`;
+  $("#inq-body [data-close]").onclick = () => $("#inq").close();
+  const oc = $("#inq-body [data-open-crm]");
+  if (oc) { oc.onclick = () => { $("#inq").close(); $("#crm").hidden = false; renderCRM(); }; oc.focus(); }
+}
+
+let toastTimer;
+function toast(t){ const el = $("#toast"); el.textContent = t; el.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), 3600); }
+
+/* ============ Промени на живо ============ */
+// Вика се от абонамента в Supabase Realtime и от периодичното опресняване.
+function applyLive(buildingUuid, row){
+  const b = BUILDINGS.find(x => x.uuid === buildingUuid); if (!b) return;
+  const a = APTS.find(x => x.b === b.id && x.id === row.code); if (!a) return;
+  const before = statusOf(a), oldPrice = a.price;
+  a.base = row.status;
+  a.price = row.price_visible === false || row.status === "sold" || row.price == null ? null : Number(row.price);
+  const after = statusOf(a);
+  if (before === after && oldPrice === a.price) return;
+  renderAll();
+  if (before !== after) toast(`Апартамент ${a.label} в „${b.short}“ току-що стана ${STATUS[after].label.toLowerCase()}.`);
+}
+
+/* ============ Старт ============ */
+(function init(){
+  const h = new URLSearchParams(location.hash.slice(1)), hb = h.get("b") || QP.get("b");
+  S.b = (hb && VISIBLE.some(b => b.id === hb)) ? hb : VISIBLE[0].id;
+  S.f.fmax = B(S.b).geo.floors;
+  const ap = h.get("apt") || QP.get("apt"), fl = +h.get("floor");
+  if (ap && aptByUid(`${S.b}:${ap}`)) { const a = aptByUid(`${S.b}:${ap}`); S.view = "floor"; S.floor = a.floor; S.sel = a.uid; }
+  else if (fl >= 1 && fl <= B(S.b).geo.floors) { S.view = "floor"; S.floor = fl; }
+  if (!DEMO) $(".fab").hidden = true;
+  renderFilters(); renderAll();
+
+  /* --- връзка със сайта домакин --- */
+  const vp = (top, h) => { const r = document.documentElement.style; r.setProperty("--vp-top", top + "px"); r.setProperty("--vp-h", h + "px"); };
+  vp(0, innerHeight);
+  if (EMBEDDED){
+    document.documentElement.classList.add("embedded");
+    let last = 0;
+    const sendH = () => { const hh = Math.ceil(document.documentElement.getBoundingClientRect().height); if (Math.abs(hh - last) > 1) { last = hh; toParent({ type: "apt-picker:height", h: hh }); } };
+    new ResizeObserver(sendH).observe(document.body); sendH();
+    addEventListener("message", e => {
+      const d = e.data || {};
+      if (d.type === "apt-picker:viewport") vp(d.top, d.h);
+      if (d.type === "apt-picker:set-building" && VISIBLE.some(b => b.id === d.b)) setBuilding(d.b);
+    });
+    toParent({ type: "apt-picker:ready" });
+  } else addEventListener("resize", () => vp(0, innerHeight));
+})();
+
+  return applyLive;
+}
+
+/* ============ Зареждане на данните ============ */
+const QP0 = new URLSearchParams(location.search);
+const REALTIME_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js";
+
+function adapt(bundle){
+  const BUILDINGS = [], PHOTO = {}, PHOTO_SRC = {}, APTS = [];
+  for (const x of bundle.buildings){
+    const layoutOf = Object.fromEntries(x.floors.map(f => [f.n, f.layout]));
+    BUILDINGS.push({ id: x.id, uuid: x.uuid, name: x.name, short: x.short || x.name, district: x.district || "", stage: x.stage || "",
+      ready: x.ready || "", desc: x.desc || "", geo: { floors: x.floors.length }, floorLayout: n => layoutOf[n], layouts: x.layouts });
+    PHOTO[x.id] = { w: x.facade.w, h: x.facade.h, floors: Object.fromEntries(x.floors.map(f => [f.n, f.polygon])) };
+    PHOTO_SRC[x.id] = x.facade.image_url;
+    for (const a of x.apartments) APTS.push({ uid: `${x.id}:${a.id}`, b: x.id, id: a.id, label: a.label, floor: a.floor, unit: a.unit,
+      rooms: a.rooms, net: Number(a.net), gross: Number(a.gross), terrace: Number(a.outdoor) || 0, garden: a.outdoor_kind === "garden",
+      exposure: a.exposure || "", price: a.price == null ? null : Number(a.price), base: a.status, pdf: a.pdf_url });
+  }
+  return [BUILDINGS, PHOTO, PHOTO_SRC, APTS];
+}
+
+function showState(text){
+  document.querySelector("#canvas").innerHTML = `<div class="state">${text}</div>`;
+  if (window.parent !== window) window.parent.postMessage({ type: "apt-picker:height", h: Math.ceil(document.documentElement.getBoundingClientRect().height) }, "*");
+}
+
+function widgetUrl(){
+  const p = new URLSearchParams();
+  if (QP0.get("b")) p.set("b", QP0.get("b"));
+  if (QP0.get("only")) p.set("only", QP0.get("only"));
+  return "/api/widget?" + p.toString();
+}
+
+function connectRealtime(bundle, apply){
+  if (!bundle.realtime || !bundle.realtime.url) return;
+  const s = document.createElement("script");
+  s.src = REALTIME_JS; s.async = true;
+  s.onload = () => {
+    try {
+      const client = window.supabase.createClient(bundle.realtime.url, bundle.realtime.key, { auth: { persistSession: false, autoRefreshToken: false } });
+      const ids = bundle.buildings.map(b => b.uuid).join(",");
+      client.channel("apartments-" + bundle.org)
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "apartments", filter: `building_id=in.(${ids})` },
+            payload => apply(payload.new.building_id, payload.new))
+        .subscribe();
+    } catch (e) { console.warn("realtime unavailable", e); }
+  };
+  document.head.appendChild(s);
+}
+
+// Резервен път: ако връзката на живо прекъсне, на всяка минута сверяваме статусите.
+function startPolling(apply){
+  setInterval(async () => {
+    if (document.hidden) return;
+    try {
+      const r = await fetch(widgetUrl()); if (!r.ok) return;
+      const bundle = await r.json();
+      for (const x of bundle.buildings) for (const a of x.apartments)
+        apply(x.uuid, { code: a.id, status: a.status, price: a.price, price_visible: a.price != null || a.status === "sold" });
+    } catch (e) {}
+  }, 60000);
+}
+
+(async function boot(){
+  if (!QP0.get("b") && !QP0.get("only")) return showState("Липсва сграда. Добавете <code>data-building</code> в кода за вграждане.");
+  showState("Зареждане на сградата…");
+  let bundle;
+  try {
+    const r = await fetch(widgetUrl());
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    bundle = await r.json();
+  } catch (e) {
+    console.error(e);
+    return showState("Изборът на апартамент не можа да се зареди. Опитайте отново след малко.");
+  }
+  const apply = main(...adapt(bundle));
+  window.AptPickerLive = apply; // за ръчна проверка от конзолата
+  connectRealtime(bundle, apply);
+  startPolling(apply);
+})();
+
+})();
+</script>
+</body>
+</html>

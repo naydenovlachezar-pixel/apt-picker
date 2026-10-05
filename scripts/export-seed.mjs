@@ -1,46 +1,48 @@
-// Генерира supabase/seed.sql от демо данните в widget/embed.html.
-// Употреба: node scripts/export-seed.mjs  →  после пуснете seed.sql в Supabase SQL Editor.
+// Записва текущите публикувани сгради на един строител като supabase/seed.sql,
+// за да може базата да се пресъздаде на чисто (нов проект, тестов клон).
+//
+// Употреба:
+//   SUPABASE_URL=... SUPABASE_ANON_KEY=... node scripts/export-seed.mjs bor
+//   (или BUNDLE_FILE=bundle.json node scripts/export-seed.mjs, за работа без мрежа)
 import { readFileSync, writeFileSync } from "node:fs";
-import vm from "node:vm";
 
-const html = readFileSync(new URL("../widget/embed.html", import.meta.url), "utf8");
-const js = html.slice(html.indexOf("<script>") + 8, html.lastIndexOf("</script>"));
-const part = js.slice(js.indexOf("const BUILDINGS = ["), js.indexOf("/* ============ Вграждане"))
-  .replace("(function injectPhotos(){", "(function injectPhotos(){ return;");
-const gen = js.slice(js.indexOf("function mulberry32"), js.indexOf("const APTS = buildData();"));
+const anchor = process.argv[2] || "bor";
+let bundle;
+if (process.env.BUNDLE_FILE) {
+  bundle = JSON.parse(readFileSync(process.env.BUNDLE_FILE, "utf8"));
+} else {
+  const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) throw new Error("Задайте SUPABASE_URL и SUPABASE_ANON_KEY");
+  const headers = { apikey: key, "Content-Type": "application/json" };
+  if (key.startsWith("eyJ")) headers.Authorization = `Bearer ${key}`;
+  const r = await fetch(`${url}/rest/v1/rpc/get_widget_bundle`, { method: "POST", headers, body: JSON.stringify({ p_building: anchor }) });
+  if (!r.ok) throw new Error(`Supabase: ${r.status} ${await r.text()}`);
+  bundle = await r.json();
+}
+if (!bundle || !bundle.buildings) throw new Error("Няма данни за " + anchor);
 
-const ctx = { out: null };
-vm.runInNewContext(part + "\n" + gen + `
-const APTS = buildData();
-out = BUILDINGS.map((b, i) => {
+const statusCode = { free: "f", reserved: "r", sold: "s" };
+const data = bundle.buildings.map((b, i) => {
   const layouts = {};
-  for (const [k, L] of Object.entries(b.layouts)) {
-    const units = {};
-    for (const [uk, u] of Object.entries(L.units)) {
-      units[uk] = { label: u.label, poly: u.poly, tag: u.tag, walls: u.walls, rl: u.rl, rooms: u.rooms, net: u.net, gross: u.gross, exposure: u.exposure };
-    }
-    layouts[k] = { viewBox: [0, 0, 1000, 560], units, extras: L.extras, balconies: L.balconies };
-  }
+  for (const [k, L] of Object.entries(b.layouts)) { const { image_url, ...plan } = L; layouts[k] = plan; }
   return {
     slug: b.id, name: b.name, short: b.short, district: b.district, stage: b.stage, ready: b.ready, desc: b.desc, sort: i,
-    facade: { image_url: PHOTO_SRC[b.id], w: PHOTO[b.id].w, h: PHOTO[b.id].h },
-    settings: b.gardenFloor ? { garden_floor: b.gardenFloor } : {},
-    layouts,
-    floors: Array.from({ length: b.geo.floors }, (_, k) => [k + 1, b.floorLayout(k + 1), PHOTO[b.id].floors[k + 1]]),
-    apts: APTS.filter(x => x.b === b.id).map(x => [x.floor, x.unit, x.price, x.base[0], x.terrace, x.garden ? 1 : 0])
+    facade: b.facade, settings: b.settings || {}, layouts,
+    floors: b.floors.map(f => [f.n, f.layout, f.polygon]),
+    // Цените на продадените не са публични, затова в seed-а остават празни.
+    apts: b.apartments.map(a => [a.floor, a.unit, a.price, statusCode[a.status], Number(a.outdoor) || 0, a.outdoor_kind === "garden" ? 1 : 0])
   };
-});`, ctx);
+});
 
-const data = JSON.stringify(ctx.out);
-const sql = `-- Демо данни: организация „Линия Девелопмънт (демо)“ и шест сгради.
--- Генерирано от scripts/export-seed.mjs. Пускайте само върху празна база.
+const sql = `-- Демо данни за организация „${bundle.org}“. Генерирано от scripts/export-seed.mjs.
+-- Пускайте само върху празна база, след миграциите.
 do $$
 declare
-  d jsonb := $seed$${data}$seed$::jsonb;
+  d jsonb := $seed$${JSON.stringify(data)}$seed$::jsonb;
   v_org uuid; b jsonb; v_bid uuid;
 begin
   perform set_config('app.status_source', 'seed', true);
-  insert into public.organizations (slug, name) values ('liniya-demo', 'Линия Девелопмънт (демо)')
+  insert into public.organizations (slug, name) values ('${bundle.org}', 'Линия Девелопмънт (демо)')
     on conflict (slug) do update set name = excluded.name returning id into v_org;
 
   for b in select * from jsonb_array_elements(d) loop
@@ -59,7 +61,7 @@ begin
     insert into public.apartments (building_id, floor_id, unit_key, code, label, rooms, net_area, gross_area, outdoor_area, outdoor_kind, exposure, price, status)
     select v_bid, fl.id, a->>1, (a->>0) || (a->>1), (a->>0) || (u.spec->>'label'),
            (u.spec->>'rooms')::int, (u.spec->>'net')::numeric, (u.spec->>'gross')::numeric, (a->>4)::numeric,
-           case when (a->>5) = '1' then 'garden' else 'terrace' end, u.spec->>'exposure', (a->>2)::numeric,
+           case when (a->>5) = '1' then 'garden' else 'terrace' end, u.spec->>'exposure', nullif(a->>2, '')::numeric,
            (case a->>3 when 'f' then 'free' when 'r' then 'reserved' else 'sold' end)::public.apartment_status
     from jsonb_array_elements(b->'apts') a
     join public.floors fl on fl.building_id = v_bid and fl.number = (a->>0)::int
@@ -69,4 +71,4 @@ begin
 end $$;
 `;
 writeFileSync(new URL("../supabase/seed.sql", import.meta.url), sql);
-console.log("supabase/seed.sql:", ctx.out.map(b => `${b.slug} ${b.apts.length}`).join(", "));
+console.log("supabase/seed.sql:", data.map(b => `${b.slug} ${b.apts.length}`).join(", "));
