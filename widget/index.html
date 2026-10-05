@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="bg"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apartment Picker — вграждане</title>
+<link href="https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font:16px/1.55 "Sofia Sans",system-ui,sans-serif;color:#1E2B30;background:#EDEEEA}
+main{max-width:980px;margin:0 auto;padding:40px 20px 60px}
+h1{font-size:34px;line-height:1.1;margin:0 0 10px} h2{margin:36px 0 10px}
+p{color:#5B686D;max-width:42em}
+pre{background:#1E2B30;color:#E3E7E2;padding:16px;border-radius:3px;overflow-x:auto;font-size:14px}
+code{font-family:ui-monospace,Menlo,Consolas,monospace}
+table{border-collapse:collapse;width:100%;font-size:15px} td,th{border-bottom:1px solid #CDD1CA;padding:8px 6px;text-align:left;vertical-align:top}
+.wrap{overflow-x:auto}
+</style></head><body><main>
+<h1>Интерактивен избор на апартамент</h1>
+<p>Widget за сайтове на строители. Вгражда се с един ред код и работи върху всеки сайт: WordPress, Webflow, Wix или сайт по поръчка.</p>
+<h2>Вграждане</h2>
+<pre><code>&lt;div data-apt-picker data-building="bor"&gt;&lt;/div&gt;
+&lt;script src="/embed.js" async&gt;&lt;/script&gt;</code></pre>
+<h2>Атрибути</h2>
+<div class="wrap"><table>
+<tr><th>Атрибут</th><th>Описание</th></tr>
+<tr><td><code>data-building</code></td><td>Сграда, която се отваря първа (bor, horizont, gradini, terakota, terasi, spirala)</td></tr>
+<tr><td><code>data-buildings</code></td><td>Кои сгради да се показват като раздели, разделени със запетая</td></tr>
+<tr><td><code>data-apartment</code></td><td>Директно отваряне на апартамент, например 5A</td></tr>
+<tr><td><code>data-theme</code></td><td>light или dark</td></tr>
+<tr><td><code>data-offset-top</code></td><td>Височина на фиксирано меню на сайта в пиксели, за да не закрива прозорците</td></tr>
+<tr><td><code>data-demo</code></td><td>Показва CRM демо панела</td></tr>
+</table></div>
+<h2>Събития</h2>
+<pre><code>document.addEventListener("apt-picker:inquiry", e =&gt; {
+  // e.detail: { building, buildingName, apartmentId, apartmentLabel }
+  gtag("event", "generate_lead", { item_id: e.detail.apartmentId });
+});</code></pre>
+<h2>Пример</h2>
+<div data-apt-picker data-building="terasi" data-buildings="terasi,spirala" data-theme="light" data-demo></div>
+<script src="/embed.js" async></script>
+</main></body></html>

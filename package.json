@@ -1,0 +1,10 @@
+{
+  "name": "apt-picker",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "dev": "vercel dev",
+    "dev:admin": "npm --prefix admin run dev"
+  }
+}

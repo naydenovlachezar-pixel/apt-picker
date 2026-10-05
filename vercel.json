@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "outputDirectory": "widget",
+  "headers": [
+    { "source": "/embed.js", "headers": [{ "key": "Cache-Control", "value": "public, max-age=300" }] },
+    { "source": "/embed.html", "headers": [{ "key": "Content-Security-Policy", "value": "frame-ancestors *" }] },
+    { "source": "/api/(.*)", "headers": [{ "key": "Cache-Control", "value": "no-store" }] }
+  ]
+}
