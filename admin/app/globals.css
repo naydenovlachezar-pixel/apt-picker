@@ -1,9 +1,100 @@
-:root{--paper:#EDEEEA;--surface:#F8F8F5;--ink:#1E2B30;--muted:#5B686D;--line:#CDD1CA;--brass:#9C6A12}
+:root{
+  --paper:#EDEEEA; --surface:#F8F8F5; --ink:#1E2B30; --muted:#5B686D; --line:#CDD1CA; --brass:#9C6A12;
+  --free:#2E8A5E; --reserved:#C98E1C; --sold:#8E979B; --danger:#B3402B;
+  --font:"Sofia Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --cond:"Sofia Sans Condensed","Sofia Sans","Arial Narrow",system-ui,sans-serif;
+}
 *{box-sizing:border-box}
-body{margin:0;font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:var(--paper)}
-main{max-width:900px;margin:0 auto;padding:48px 20px}
-h1{font-size:32px;line-height:1.1;margin:0 0 8px}
-p{color:var(--muted)}
-ol{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:18px 18px 18px 38px}
-li{margin:6px 0}
-li.done{color:var(--muted);text-decoration:line-through}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font:16px/1.5 var(--font);-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
+.muted{color:var(--muted)}
+
+/* Вход */
+.login{min-height:100vh;display:grid;place-items:center;padding:24px}
+.login-box{width:min(420px,100%)}
+.login h1{font:700 34px/1.05 var(--cond);margin:0 0 8px}
+.login p{color:var(--muted);margin:0 0 20px}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label{font-weight:600;font-size:15px}
+.field input{border:1px solid var(--line);background:var(--surface);border-radius:2px;padding:11px 12px}
+.btn{border:1px solid var(--ink);background:transparent;border-radius:2px;padding:10px 16px;cursor:pointer;font-weight:600;min-height:42px}
+.btn.primary{background:var(--ink);color:var(--paper)}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.ghost{border-color:var(--line);font-weight:500;min-height:36px;padding:6px 12px}
+.note{border-left:3px solid var(--brass);background:var(--surface);padding:12px 14px;margin-top:16px;font-size:15px}
+.err{color:var(--danger);font-size:15px;margin-top:10px}
+
+/* Панел */
+.top{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:14px 24px;border-bottom:1px solid var(--line);background:var(--surface)}
+.top .org{font:700 22px/1 var(--cond)}
+.top .spacer{flex:1}
+.top .who{font-size:14px;color:var(--muted)}
+.wrap{max-width:1240px;margin:0 auto;padding:20px 24px 60px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:18px}
+.tab{background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px 9px;cursor:pointer;text-align:left;margin-bottom:-1px}
+.tab b{display:block;font:700 19px/1.1 var(--cond)}
+.tab span{font-size:13px;color:var(--muted)}
+.tab[aria-selected="true"]{border-bottom-color:var(--brass)}
+
+/* Ред с наличността: единственото „силно“ място в интерфейса */
+.tally{display:flex;align-items:stretch;gap:0;margin:0 0 18px;border:1px solid var(--line);background:var(--surface)}
+.tally div{flex:1;padding:12px 16px;border-right:1px solid var(--line)}
+.tally div:last-child{border-right:0}
+.tally b{display:block;font:700 34px/1 var(--cond)}
+.tally span{font-size:14px;color:var(--muted)}
+.tally .free b{color:var(--free)} .tally .reserved b{color:var(--reserved)} .tally .sold b{color:var(--sold)}
+.bar{height:6px;display:flex;margin:-19px 0 18px;border:1px solid var(--line);border-top:0}
+.bar i{display:block}
+.bar .free{background:var(--free)} .bar .reserved{background:var(--reserved)} .bar .sold{background:var(--sold)}
+
+.tools{display:flex;gap:10px 18px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+a.btn{color:inherit;text-decoration:none;display:inline-flex;align-items:center}
+.tools input[type=search]{min-width:260px}
+.tools input,.tools select{border:1px solid var(--line);background:var(--surface);border-radius:2px;padding:7px 10px;min-height:38px}
+.tools .spacer{flex:1}
+
+.tablewrap{overflow-x:auto;border:1px solid var(--line);background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:860px}
+th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{font-size:14px;color:var(--muted);font-weight:600;background:var(--paper);position:sticky;top:0}
+tr:last-child td{border-bottom:0}
+td.num{font:700 20px var(--cond)}
+td.r,th.r{text-align:right}
+tr.saving{opacity:.6}
+tr.flash td{animation:flash 1.4s ease-out}
+@keyframes flash{0%{background:color-mix(in srgb,var(--brass) 22%,transparent)}100%{background:transparent}}
+@media (prefers-reduced-motion:reduce){tr.flash td{animation:none}}
+
+.price{width:130px;border:1px solid var(--line);background:var(--paper);border-radius:2px;padding:6px 8px;text-align:right;font-variant-numeric:tabular-nums}
+.price:disabled{opacity:.6}
+.chk{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--muted);cursor:pointer}
+.chk input{accent-color:var(--ink);width:16px;height:16px}
+
+/* Статус: три бутона като печати */
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--paper)}
+.seg button{border:0;background:transparent;padding:6px 12px;font-size:14px;font-weight:600;cursor:pointer;color:var(--muted);min-height:34px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"].free{background:var(--free);color:#fff}
+.seg button[aria-pressed="true"].reserved{background:var(--reserved);color:#fff}
+.seg button[aria-pressed="true"].sold{background:var(--sold);color:#fff}
+.seg button:disabled{cursor:default}
+
+.empty{padding:40px 16px;text-align:center;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:3px;font-size:15px;max-width:calc(100% - 32px);z-index:20}
+.toast.err{background:var(--danger);color:#fff}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--sold)}
+.live.on i{background:var(--free)}
+@media (max-width:700px){
+  .top,.wrap{padding-left:14px;padding-right:14px}
+  .tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .tab{flex:none}
+  .tally{display:grid;grid-template-columns:1fr 1fr}
+  .tally div:nth-child(2){border-right:0}
+  .tally div:nth-child(-n+2){border-bottom:1px solid var(--line)}
+  .tally b{font-size:26px}
+  .bar{margin-top:-19px}
+  .tools input[type=search]{min-width:0;flex:1 1 100%}
+}
