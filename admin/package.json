@@ -7,9 +7,10 @@
     "start": "next start"
   },
   "dependencies": {
+    "@supabase/supabase-js": "2.117.2",
     "next": "16.3.8",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "@supabase/supabase-js": "2.117.2"
+    "read-excel-file": "9.3.10"
   }
 }

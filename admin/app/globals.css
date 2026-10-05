@@ -51,7 +51,7 @@ button,input,select{font:inherit;color:inherit}
 
 .tools{display:flex;gap:10px 18px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
 a.btn{color:inherit;text-decoration:none;display:inline-flex;align-items:center}
-.tools input[type=search]{min-width:260px}
+.tools input[type=search]{min-width:220px}
 .tools input,.tools select{border:1px solid var(--line);background:var(--surface);border-radius:2px;padding:7px 10px;min-height:38px}
 .tools .spacer{flex:1}
 
@@ -98,3 +98,26 @@ tr.flash td{animation:flash 1.4s ease-out}
   .bar{margin-top:-19px}
   .tools input[type=search]{min-width:0;flex:1 1 100%}
 }
+
+/* Внасяне */
+dialog.dlg{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:3px;padding:22px;width:min(640px,calc(100% - 28px));max-height:calc(100% - 40px)}
+dialog.dlg::backdrop{background:rgba(15,22,25,.55)}
+.dlg h2{font:700 24px/1.15 var(--cond);margin:0 0 4px}
+.dlg .muted{margin:0 0 14px}
+.problems{border-left:3px solid var(--danger);background:var(--paper);padding:10px 14px;margin-bottom:14px;font-size:14px}
+.problems ul{margin:6px 0 0;padding-left:18px}
+.changes{max-height:340px;overflow:auto;border:1px solid var(--line);margin-bottom:16px}
+.changes table{min-width:0}
+.changes td.num{font-size:17px}
+.dlg-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.tools .btn:disabled{opacity:.5}
+
+/* История */
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(440px,100%);background:var(--surface);border-left:1px solid var(--line);box-shadow:-12px 0 40px rgba(0,0,0,.12);z-index:15;display:flex;flex-direction:column;padding:18px 20px}
+.drawer-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.drawer h2{font:700 24px var(--cond);margin:0}
+.drawer > .muted{margin:6px 0 12px;font-size:14px}
+.hist{list-style:none;margin:0;padding:0;overflow:auto;flex:1;border-top:1px solid var(--line)}
+.hist li{padding:10px 0;border-bottom:1px solid var(--line);font-size:15px}
+.hist li .muted{font-size:13px;margin-top:2px}
+.hist b{font:700 18px var(--cond);margin-right:4px}

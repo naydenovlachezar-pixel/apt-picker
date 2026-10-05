@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase, WIDGET_ORIGIN } from "../lib/supabase";
+import { readFile, buildImport, downloadCsv, STATUS_OUT } from "../lib/sheet";
 
 const STATUS = { free: "Свободен", reserved: "Резервиран", sold: "Продаден" };
 const ROOMS = { 1: "Едностаен", 2: "Двустаен", 3: "Тристаен", 4: "Четиристаен" };
@@ -70,6 +71,9 @@ function Dashboard({ session }) {
   const [flash, setFlash] = useState({});
   const [toast, setToast] = useState(null);
   const [live, setLive] = useState(false);
+  const [importing, setImporting] = useState(null);
+  const [history, setHistory] = useState(null);
+  const fileRef = useRef();
   const toastTimer = useRef();
 
   const org = orgs && orgs.find(o => o.id === orgId);
@@ -95,6 +99,16 @@ function Dashboard({ session }) {
       setBuildings(data || []); setBid(b => (data || []).some(x => x.id === b) ? b : (data && data[0] ? data[0].id : null));
     });
   }, [orgId]);
+
+  function loadApts() {
+    return sb.from("apartments")
+      .select("id, code, label, unit_key, rooms, gross_area, net_area, price, price_visible, status, updated_at, floor:floors(number)")
+      .eq("building_id", bid)
+      .then(({ data, error }) => {
+        if (error) return say("Апартаментите не се заредиха: " + error.message, true);
+        setApts((data || []).map(a => ({ ...a, floor: a.floor ? a.floor.number : null })).sort((a, b) => a.floor - b.floor || a.unit_key.localeCompare(b.unit_key)));
+      });
+  }
 
   useEffect(() => {
     if (!bid) return;
@@ -134,6 +148,32 @@ function Dashboard({ session }) {
       return say(error ? "Промяната не е записана: " + error.message : "Нямате права да променяте този апартамент.", true);
     }
     mark(a.id); say(message);
+  }
+
+  async function onFile(e) {
+    const file = e.target.files && e.target.files[0]; e.target.value = "";
+    if (!file) return;
+    try {
+      const res = buildImport(await readFile(file), apts);
+      if (res.error) return say(res.error, true);
+      setImporting({ file: file.name, ...res, state: "review" });
+    } catch (err) { say(err.message || "Файлът не можа да се прочете.", true); }
+  }
+
+  async function applyImport() {
+    setImporting(im => ({ ...im, state: "saving" }));
+    const { data, error } = await sb.rpc("import_apartments", { p_building: bid, p_rows: importing.changes.map(c => c.patch) });
+    if (error) { setImporting(im => ({ ...im, state: "review" })); return say("Внасянето не е приложено: " + error.message, true); }
+    setImporting(null);
+    await loadApts();
+    say(data.updated ? `Внесени промени: ${data.updated}. Сайтът е обновен.` : "Нямаше какво да се промени.");
+  }
+
+  async function openHistory() {
+    setHistory({ loading: true, rows: [] });
+    const { data, error } = await sb.rpc("building_history", { p_building: bid, p_limit: 200 });
+    if (error) { setHistory(null); return say("Историята не се зареди: " + error.message, true); }
+    setHistory({ loading: false, rows: data || [] });
   }
 
   const floors = useMemo(() => [...new Set(apts.map(a => a.floor))].sort((a, b) => a - b), [apts]);
@@ -191,6 +231,10 @@ function Dashboard({ session }) {
               <option value="">Всички статуси</option>{Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
             <span className="spacer" />
+            <button className="btn ghost" onClick={openHistory}>История</button>
+            <button className="btn ghost" onClick={() => downloadCsv(apts, building.name)} disabled={!apts.length}>Изтегли таблицата</button>
+            {canEdit && <><button className="btn ghost" onClick={() => fileRef.current.click()}>Внеси от файл</button>
+              <input ref={fileRef} type="file" accept=".xlsx,.csv" hidden onChange={onFile} /></>}
             <a className="btn ghost" href={`${WIDGET_ORIGIN}/embed.html?b=${building.slug}`} target="_blank" rel="noopener">Виж на сайта</a>
           </div>
 
@@ -206,6 +250,8 @@ function Dashboard({ session }) {
           </div>
         </>}
       </main>
+      {importing && <ImportDialog im={importing} building={building} onCancel={() => setImporting(null)} onApply={applyImport} />}
+      {history && <HistoryPanel h={history} building={building} onClose={() => setHistory(null)} />}
       {toast && <div className={"toast" + (toast.isErr ? " err" : "")} role="status">{toast.text}</div>}
     </>
   );
@@ -245,5 +291,49 @@ function Row({ a, canEdit, busy, flash, save }) {
         </div>
       </td>
     </tr>
+  );
+}
+
+function ImportDialog({ im, building, onCancel, onApply }) {
+  const ref = useRef();
+  useEffect(() => { ref.current && ref.current.showModal(); }, []);
+  const n = im.changes.length;
+  return (
+    <dialog ref={ref} className="dlg" onCancel={e => { e.preventDefault(); onCancel(); }} aria-labelledby="imp-title">
+      <h2 id="imp-title">Внасяне в {building ? building.name : ""}</h2>
+      <p className="muted">{im.file}: {n ? `${n} ${n === 1 ? "апартамент ще се промени" : "апартамента ще се променят"}` : "няма промени спрямо сегашните данни"}{im.unchanged ? `, ${im.unchanged} без промяна` : ""}.</p>
+      {im.problems.length > 0 && <div className="problems"><b>Пропуснати редове ({im.problems.length})</b><ul>{im.problems.slice(0, 12).map((p, i) => <li key={i}>{p}</li>)}</ul>{im.problems.length > 12 && <p className="muted">и още {im.problems.length - 12}.</p>}</div>}
+      {n > 0 && <div className="changes"><table><thead><tr><th>Апартамент</th><th>Етаж</th><th>Промяна</th></tr></thead>
+        <tbody>{im.changes.map(c => <tr key={c.patch.code}><td className="num">{c.label}</td><td>{c.floor}</td><td>{c.diff.join(", ")}</td></tr>)}</tbody></table></div>}
+      <div className="dlg-actions">
+        <button className="btn" onClick={onCancel}>Отказ</button>
+        <button className="btn primary" onClick={onApply} disabled={!n || im.state === "saving"}>{im.state === "saving" ? "Прилагане…" : n ? `Приложи ${n} ${n === 1 ? "промяна" : "промени"}` : "Няма промени"}</button>
+      </div>
+    </dialog>
+  );
+}
+
+const SOURCE = { admin: "от панела", import: "от файл", hubspot: "от HubSpot", api: "от системата" };
+function describe(r) {
+  const out = [];
+  if (r.old_status !== r.new_status) out.push(`${r.old_status ? STATUS_OUT[r.old_status] : "Нов"} → ${STATUS_OUT[r.new_status]}`);
+  if (r.old_price !== r.new_price) out.push(`цена ${r.old_price == null ? "няма" : nf.format(Math.round(r.old_price)) + " €"} → ${r.new_price == null ? "няма" : nf.format(Math.round(r.new_price)) + " €"}`);
+  if (r.old_price_visible !== r.new_price_visible && r.old_price_visible != null) out.push(r.new_price_visible ? "цената се показва" : "цена по запитване");
+  return out.join(", ") || "без видима промяна";
+}
+function HistoryPanel({ h, building, onClose }) {
+  useEffect(() => { const k = e => e.key === "Escape" && onClose(); addEventListener("keydown", k); return () => removeEventListener("keydown", k); }, []);
+  return (
+    <aside className="drawer" aria-label="История на промените">
+      <div className="drawer-head"><h2>История</h2><button className="btn ghost" onClick={onClose}>Затвори</button></div>
+      <p className="muted">{building ? building.name : ""}, последните промени на статус и цена.</p>
+      {h.loading ? <p className="muted">Зареждане…</p> : !h.rows.length ? <p className="muted">Още няма промени. Всяка смяна от панела, от файл или от HubSpot ще се вижда тук.</p> : (
+        <ol className="hist">{h.rows.map((r, i) => (
+          <li key={i}>
+            <div><b>{r.label}</b> {describe(r)}</div>
+            <div className="muted">{new Date(r.changed_at).toLocaleString("bg-BG", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}, {SOURCE[r.source] || r.source}{r.email ? `, ${r.email}` : ""}</div>
+          </li>))}</ol>
+      )}
+    </aside>
   );
 }
