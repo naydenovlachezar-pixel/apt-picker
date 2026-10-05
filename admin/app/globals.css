@@ -82,7 +82,7 @@ tr.flash td{animation:flash 1.4s ease-out}
 .seg button:disabled{cursor:default}
 
 .empty{padding:40px 16px;text-align:center;color:var(--muted)}
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:3px;font-size:15px;max-width:calc(100% - 32px);z-index:40}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:3px;font-size:15px;max-width:calc(100% - 32px);z-index:40;pointer-events:none}
 .toast.err{background:var(--danger);color:#fff}
 .live{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
 .live i{width:8px;height:8px;border-radius:50%;background:var(--sold)}
@@ -175,3 +175,30 @@ dialog.dlg::backdrop{background:rgba(15,22,25,.55)}
 .fe-modal-box .muted{margin:0 0 14px;font-size:14px}
 .fe-modal-box select{border:1px solid var(--line);background:var(--paper);border-radius:2px;padding:10px}
 @media (max-width:860px){.fe-body{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}.fe-side{border-left:0;border-top:1px solid var(--line);max-height:42vh}}
+
+/* Редактор на разпределения */
+.fe-top > select{border:1px solid var(--line);background:var(--paper);border-radius:2px;padding:6px 8px;min-height:36px;max-width:260px}
+.fe-stage svg.drawing{cursor:copy}
+.le-unit polygon{fill:#2E8A5E;fill-opacity:.18;stroke:#1E2B30;stroke-opacity:.8;cursor:pointer}
+.le-unit.on polygon{fill:#E0A840;fill-opacity:.35;stroke:#9C6A12;stroke-opacity:1}
+.le-unit text{fill:#1E2B30;font-family:var(--cond);font-weight:700;text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:#fff;stroke-width:4px}
+.le-unit text.sub{font-family:var(--font);font-weight:600}
+.le-draw{fill:none;stroke:#E0A840;stroke-dasharray:8 6;pointer-events:none}
+.le-row{display:flex;gap:10px 16px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.le-list ul{list-style:none;margin:6px 0 0;padding:0;border-top:1px solid var(--line)}
+.le-list li button{width:100%;display:flex;justify-content:space-between;gap:8px;background:none;border:0;border-bottom:1px solid var(--line);padding:8px 4px;cursor:pointer;text-align:left;font-size:15px}
+.le-list li button[aria-current="true"]{background:var(--paper);box-shadow:inset 3px 0 0 var(--brass)}
+.le-list b{font-family:var(--cond)}
+.le-form{border-top:1px solid var(--line);padding-top:10px}
+.le-form h3{font:700 22px/1 var(--cond);margin:0 0 10px}
+.le-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.le-grid .field{margin-bottom:8px}
+.le-grid input,.le-grid select{border:1px solid var(--line);background:var(--paper);border-radius:2px;padding:8px;width:100%}
+.fe-side .field input{border:1px solid var(--line);background:var(--paper);border-radius:2px;padding:9px 10px}
+.le-assign{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:8px}
+.le-assign .muted{margin:0;font-size:14px}
+.le-floors{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.le-floors button{min-width:38px;min-height:34px;border:1px solid var(--line);background:var(--paper);border-radius:3px;cursor:pointer;font-weight:600}
+.le-floors button.mine{background:var(--free);color:#fff;border-color:var(--free);cursor:default;opacity:1}
+.le-floors button.picked{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.le-sec{display:flex;flex-direction:column;gap:2px}

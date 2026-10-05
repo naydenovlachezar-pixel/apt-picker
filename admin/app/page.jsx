@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase, WIDGET_ORIGIN } from "../lib/supabase";
 import { readFile, buildImport, downloadCsv, STATUS_OUT } from "../lib/sheet";
 import FacadeEditor from "./FacadeEditor";
+import LayoutEditor from "./LayoutEditor";
 
 const STATUS = { free: "Свободен", reserved: "Резервиран", sold: "Продаден" };
 const ROOMS = { 1: "Едностаен", 2: "Двустаен", 3: "Тристаен", 4: "Четиристаен" };
@@ -83,6 +84,7 @@ function Dashboard({ session }) {
   const [importing, setImporting] = useState(null);
   const [history, setHistory] = useState(null);
   const [facade, setFacade] = useState(false);
+  const [plans, setPlans] = useState(false);
   const fileRef = useRef();
   const toastTimer = useRef();
 
@@ -134,7 +136,7 @@ function Dashboard({ session }) {
     if (!bid) return;
     const ch = sb.channel("admin-" + bid)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "apartments", filter: `building_id=eq.${bid}` }, p => {
-        setApts(list => list.map(a => a.id === p.new.id ? { ...a, status: p.new.status, price: p.new.price, price_visible: p.new.price_visible, label: p.new.label, updated_at: p.new.updated_at } : a));
+        setApts(list => list.map(a => a.id === p.new.id ? { ...a, status: p.new.status, price: p.new.price, price_visible: p.new.price_visible, label: p.new.label, gross_area: p.new.gross_area, rooms: p.new.rooms, updated_at: p.new.updated_at } : a));
         mark(p.new.id);
       })
       .subscribe(s => setLive(s === "SUBSCRIBED"));
@@ -243,6 +245,7 @@ function Dashboard({ session }) {
             </select>
             <span className="spacer" />
             <button className="btn ghost" onClick={() => setFacade(true)}>Фасада и входове</button>
+            <button className="btn ghost" onClick={() => setPlans(true)}>Разпределения</button>
             <button className="btn ghost" onClick={openHistory}>История</button>
             <button className="btn ghost" onClick={() => downloadCsv(apts, building.name)} disabled={!apts.length}>Изтегли таблицата</button>
             {canEdit && <><button className="btn ghost" onClick={() => fileRef.current.click()}>Внеси от файл</button>
@@ -264,6 +267,7 @@ function Dashboard({ session }) {
       </main>
       {importing && <ImportDialog im={importing} building={building} onCancel={() => setImporting(null)} onApply={applyImport} />}
       {facade && building && <FacadeEditor building={building} orgId={orgId} canEdit={canEdit} onClose={() => setFacade(false)} onSaved={loadApts} />}
+      {plans && building && <LayoutEditor building={building} orgId={orgId} canEdit={canEdit} onClose={() => setPlans(false)} onSaved={loadApts} />}
       {history && <HistoryPanel h={history} building={building} onClose={() => setHistory(null)} />}
       {toast && <div className={"toast" + (toast.isErr ? " err" : "")} role="status">{toast.text}</div>}
     </>
