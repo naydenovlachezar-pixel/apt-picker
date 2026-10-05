@@ -14,7 +14,7 @@ function centroid(pts) {
   if (Math.abs(a) < 1e-6) return [pts.reduce((s, p) => s + p[0], 0) / pts.length, pts.reduce((s, p) => s + p[1], 0) / pts.length];
   return [cx / (3 * a), cy / (3 * a)];
 }
-const blank = () => ({ key: null, name: "", img: null, units: {}, kind: "image" });
+const blank = () => ({ key: null, name: "", img: null, units: {}, kind: "image", numbering: "as_is" });
 
 export default function LayoutEditor({ building, orgId, canEdit, onClose, onSaved }) {
   const sb = supabase();
@@ -52,7 +52,7 @@ export default function LayoutEditor({ building, orgId, canEdit, onClose, onSave
     setSel(null); setDrawing(null); setVsel(null); setDirty(false); setAssign({});
     if (!l) return setCur(blank());
     const p = l.plan || {};
-    setCur({ key: l.key, name: l.name || "", kind: p.kind === "image" ? "image" : "legacy",
+    setCur({ key: l.key, name: l.name || "", kind: p.kind === "image" ? "image" : "legacy", numbering: p.numbering === "floor" ? "floor" : "as_is",
       img: l.image_url && p.w ? { url: l.image_url, w: p.w, h: p.h } : null,
       units: JSON.parse(JSON.stringify(p.units || {})) });
   }
@@ -176,7 +176,7 @@ export default function LayoutEditor({ building, orgId, canEdit, onClose, onSave
         exposure: (u.exposure || "").trim(), pts: u.pts };
     }
     setBusy(true);
-    const { data, error } = await sb.rpc("save_layout", { p_building: building.id, p_key: cur.key, p_name: cur.name.trim(), p_image_url: cur.img.url, p_w: cur.img.w, p_h: cur.img.h, p_units: clean });
+    const { data, error } = await sb.rpc("save_layout", { p_building: building.id, p_key: cur.key, p_name: cur.name.trim(), p_image_url: cur.img.url, p_w: cur.img.w, p_h: cur.img.h, p_units: clean, p_numbering: cur.numbering });
     setBusy(false);
     if (error) return say("Не е запазено: " + error.message, true);
     setDirty(false);
@@ -278,6 +278,14 @@ export default function LayoutEditor({ building, orgId, canEdit, onClose, onSave
           {!legacy && <div className="field"><label htmlFor="le-name">Име на разпределението</label>
             <input id="le-name" value={cur.name} placeholder="Например: Тип А, етажи 1–5" disabled={!editable} onChange={e => { setCur(c => ({ ...c, name: e.target.value })); setDirty(true); }} /></div>}
 
+          {!legacy && <div className="field"><label htmlFor="le-num">Номерация на апартаментите</label>
+            <select id="le-num" value={cur.numbering} disabled={!editable} onChange={e => { setCur(c => ({ ...c, numbering: e.target.value })); setDirty(true); }}>
+              <option value="as_is">Точно както е въведен номерът (Р22)</option>
+              <option value="floor">Етаж + номер (1А, 2А, 3А…)</option>
+            </select>
+            {cur.numbering === "as_is" && usedBy > 1 && <span className="le-warn">Разпределението е на {usedBy} етажа, затова номерата ще се повтарят. Изберете „Етаж + номер“ или сменете номерата в таблицата.</span>}
+          </div>}
+
           {drawing ? (
             <div className="note">Щракнете по ъглите на апартамента. Затворете контура с щракане върху първата точка или с Enter. Backspace маха последната точка, Esc отказва.
               <div className="le-row"><button className="btn primary" onClick={() => finishDrawing(drawing.pts)} disabled={drawing.pts.length < 3}>Готово</button><button className="btn ghost" onClick={() => setDrawing(null)}>Отказ</button></div></div>
@@ -294,7 +302,7 @@ export default function LayoutEditor({ building, orgId, canEdit, onClose, onSave
           {su && !drawing && <div className="le-form">
             <h3>Апартамент {su.label}</h3>
             <div className="le-grid">
-              <div className="field"><label htmlFor="u-label">Номер</label><input id="u-label" value={su.label} disabled={!editable} onChange={e => patchUnit(sel, { label: e.target.value.toUpperCase().slice(0, 6) })} /></div>
+              <div className="field"><label htmlFor="u-label">Номер</label><input id="u-label" value={su.label} disabled={!editable} onChange={e => patchUnit(sel, { label: e.target.value.slice(0, 12) })} /></div>
               <div className="field"><label htmlFor="u-rooms">Стаи</label><select id="u-rooms" value={su.rooms} disabled={!editable} onChange={e => patchUnit(sel, { rooms: +e.target.value })}>{[1, 2, 3, 4, 5, 6].map(r => <option key={r} value={r}>{r}</option>)}</select></div>
               <div className="field"><label htmlFor="u-gross">Обща площ, m²</label><input id="u-gross" inputMode="decimal" value={su.gross} disabled={!editable} onChange={e => patchUnit(sel, { gross: e.target.value })} /></div>
               <div className="field"><label htmlFor="u-net">Чиста площ, m²</label><input id="u-net" inputMode="decimal" value={su.net || ""} disabled={!editable} onChange={e => patchUnit(sel, { net: e.target.value })} /></div>
