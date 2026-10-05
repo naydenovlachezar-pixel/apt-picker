@@ -138,6 +138,8 @@ dialog.dlg::backdrop{background:rgba(15,22,25,.55)}
 .fe-floor polygon{fill:#E0A840;fill-opacity:.16;stroke:#fff;stroke-opacity:.55;stroke-width:2;vector-effect:non-scaling-stroke}
 .fe-floor.on polygon{fill-opacity:.34;stroke:#E0A840;stroke-opacity:1}
 .fe-floor text{fill:#fff;font-family:var(--cond);font-weight:700;paint-order:stroke;stroke:rgba(15,22,25,.7);stroke-width:3px}
+.fe-floor.other polygon{fill:#fff;fill-opacity:.08;stroke:#fff;stroke-opacity:.45;stroke-dasharray:4 4}
+.fe-floor.other text{opacity:.6}
 .fe-edge{fill:none;stroke:#E0A840;stroke-linejoin:round;pointer-events:none}
 .fe-other{fill:none;stroke:#fff;stroke-dasharray:6 6;stroke-opacity:.8;pointer-events:none}
 .fe-handle{fill:#fff;stroke:#1E2B30;cursor:grab}
@@ -156,4 +158,20 @@ dialog.dlg::backdrop{background:rgba(15,22,25,.55)}
 .fe-st{font-style:normal;font-size:13px;color:var(--muted)}
 .fe-st.ok{color:var(--free)} .fe-st.part{color:var(--reserved)}
 .fe-keys{font-size:13px;margin:4px 0 0}
+
+/* Входове */
+.fe-secs{display:flex;flex-direction:column;gap:6px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.fe-secs-head{display:flex;justify-content:space-between;align-items:baseline}
+.fe-sec-list{display:flex;flex-wrap:wrap;gap:6px}
+.fe-sec-list button{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:5px 12px;cursor:pointer;font-weight:600;font-size:14px}
+.fe-sec-list button[aria-selected="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.fe-sec-tools{display:flex;gap:14px}
+.linkbtn{background:none;border:0;padding:2px 0;text-decoration:underline;text-underline-offset:3px;cursor:pointer;color:var(--muted);font-size:14px}
+.linkbtn:hover{color:var(--ink)}
+.linkbtn.danger{color:var(--danger)}
+.fe-modal{position:fixed;inset:0;z-index:35;background:rgba(15,22,25,.55);display:grid;place-items:center;padding:20px}
+.fe-modal-box{background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:22px;width:min(460px,100%)}
+.fe-modal-box h2{font:700 24px/1.15 var(--cond);margin:0 0 6px}
+.fe-modal-box .muted{margin:0 0 14px;font-size:14px}
+.fe-modal-box select{border:1px solid var(--line);background:var(--paper);border-radius:2px;padding:10px}
 @media (max-width:860px){.fe-body{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}.fe-side{border-left:0;border-top:1px solid var(--line);max-height:42vh}}
