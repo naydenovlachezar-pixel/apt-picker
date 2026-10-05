@@ -198,6 +198,9 @@ pre{white-space:pre;overflow-x:auto;font-size:12px;line-height:1.45;margin:10px 
 .pf-mark .pill rect{filter:drop-shadow(0 1px 3px rgba(0,0,0,.35))}
 .pf-mark .pill text{fill:#fff;font-family:var(--cond);font-weight:600}
 .pf-mark .pill.none rect{fill:#3A4246;fill-opacity:.9}
+.pf-mark .pill{opacity:0}
+.fl:hover .pf-mark .pill,.fl:focus-within .pf-mark .pill{opacity:1}
+@media (prefers-reduced-motion:no-preference){.pf-mark .pill{transition:opacity .15s}}
 .pf-sec rect{fill:rgba(15,22,25,.78)}
 .pf-sec text{fill:#fff;font-family:var(--cond);font-weight:700;text-anchor:middle}
 html.embedded,html.embedded body{background:transparent}
@@ -267,7 +270,7 @@ const yAt = (line, x) => { if (x <= line[0][0]) return line[0][1]; for (let i = 
 function photoFacade(b){
   const P = PHOTO[b.id], sc = P.w / 760;
   let s = `<div class="pf ph-${b.id}" style="aspect-ratio:${P.w}/${P.h}"><svg class="pf-svg" viewBox="0 0 ${P.w} ${P.h}" role="group" aria-label="Фасада на ${esc(b.name)}, изберете етаж">`;
-  let hits = "", marks = "", secTags = "";
+  let hits = "", secTags = "";
   for (const sec of b.sections){
     const fl = b.floorsOf(sec.key);
     let topLine = null;
@@ -278,18 +281,17 @@ function photoFacade(b){
       const pts = [...F.t, ...[...F.b].reverse()].map(p => p.join(",")).join(" ");
       const apts = floorApts(b.id, n, sec.key), free = apts.filter(a => statusOf(a) === "free" && matchesBase(a));
       const out = n < S.f.fmin || n > S.f.fmax, where = floorName(b, sec.key, n);
-      hits += `<polygon class="floor-hit photo ${out ? "out" : ""}" points="${pts}" data-floor="${n}" data-sec="${sec.key}" tabindex="0" role="button" aria-label="${where}, ${free.length ? free.length + " " + svobodni(free.length) : "няма свободни"} от ${apts.length}"/>`;
-      // При няколко входа етикетите са по-кратки, за да се събират в по-тесните обеми
-      const ph = 26 * sc, pad = 8 * sc;
-      const tw = (b.multi ? 30 : 58) * sc, pw = (b.multi ? 34 : (free.length ? 104 : 124)) * sc;
+      // Етажът, етикетът и броят свободни са в обща група: броят се показва само при посочване или фокус
+      const ph = 26 * sc, pad = 8 * sc, tw = 58 * sc, pw = (free.length ? 108 : 124) * sc;
       const xL = Math.max(F.t[0][0], F.b[0][0]), xR = Math.min(F.t[F.t.length-1][0], F.b[F.b.length-1][0]);
-      const room = xR - xL, showPill = room > tw + pw + pad * 3;
-      const tcx = xL + pad + tw / 2, pcx = xR - pad - pw / 2;
       const my = x => (yAt(F.t, x) + yAt(F.b, x)) / 2;
-      const ty = my(tcx), py = my(pcx);
-      const txt = b.multi ? String(free.length) : free.length ? `${free.length} ${svobodni(free.length)}` : "няма свободни";
-      marks += `<g class="pf-mark" pointer-events="none"><rect class="pf-tag" x="${tcx - tw/2}" y="${ty - ph/2}" width="${tw}" height="${ph}" rx="${ph/2}"/><text class="pf-tag-t" x="${tcx}" y="${ty + 5*sc}" style="font-size:${14*sc}px">${b.multi ? n : "Ет. " + n}</text>
-        ${showPill ? `<g class="pill ${free.length ? "" : "none"}"><rect x="${pcx - pw/2}" y="${py - ph/2}" width="${pw}" height="${ph}" rx="${ph/2}"/><text x="${pcx}" y="${py + 5*sc}" text-anchor="middle" style="font-size:${14*sc}px">${txt}</text></g>` : ""}</g>`;
+      const tcx = xL + pad + tw / 2, ty = my(tcx);
+      // Ако обемът е тесен, броят застава в средата му, върху етикета
+      const fits = xR - xL > tw + pw + pad * 3, pcx = fits ? xR - pad - pw / 2 : (xL + xR) / 2, py = my(pcx);
+      const txt = free.length ? `${free.length} ${svobodni(free.length)}` : "няма свободни";
+      hits += `<g class="fl"><polygon class="floor-hit photo ${out ? "out" : ""}" points="${pts}" data-floor="${n}" data-sec="${sec.key}" tabindex="0" role="button" aria-label="${where}, ${free.length ? free.length + " " + svobodni(free.length) : "няма свободни"} от ${apts.length}"/>
+        <g class="pf-mark" pointer-events="none"><rect class="pf-tag" x="${tcx - tw/2}" y="${ty - ph/2}" width="${tw}" height="${ph}" rx="${ph/2}"/><text class="pf-tag-t" x="${tcx}" y="${ty + 5*sc}" style="font-size:${14*sc}px">Ет. ${n}</text>
+        <g class="pill ${free.length ? "" : "none"}"><rect x="${pcx - pw/2}" y="${py - ph/2}" width="${pw}" height="${ph}" rx="${ph/2}"/><text x="${pcx}" y="${py + 5*sc}" text-anchor="middle" style="font-size:${14*sc}px">${txt}</text></g></g></g>`;
     }
     if (b.multi && topLine && sec.name){
       const cx = (topLine[0][0] + topLine[topLine.length-1][0]) / 2, cy = Math.min(...topLine.map(p => p[1])) - 20 * sc;
@@ -297,7 +299,7 @@ function photoFacade(b){
       secTags += `<g class="pf-sec" pointer-events="none"><rect x="${cx - w/2}" y="${cy - 14*sc}" width="${w}" height="${28*sc}" rx="${4*sc}"/><text x="${cx}" y="${cy + 5*sc}" style="font-size:${15*sc}px">${esc(sec.name)}</text></g>`;
     }
   }
-  return s + hits + marks + secTags + `</svg></div>`;
+  return s + hits + secTags + `</svg></div>`;
 }
 function floorName(b, sec, n){ return b.multi ? `${b.secName(sec)}, етаж ${n}` : `Етаж ${n}`; }
 
@@ -441,7 +443,7 @@ function renderFilters(){
 function renderPicker(){
   const b = B(S.b), c = $("#canvas"), side = $("#side");
   if (S.view === "building"){
-    c.innerHTML = `<div class="canvas-head"><h2>Изберете етаж</h2><span class="muted">Броят показва свободните апартаменти според филтрите</span></div>` + facadeSVG(b) + `<div class="tip" id="tip" hidden></div>`;
+    c.innerHTML = `<div class="canvas-head"><h2>Изберете етаж</h2><span class="muted">Посочете етаж, за да видите колко свободни апартаменти има</span></div>` + facadeSVG(b) + `<div class="tip" id="tip" hidden></div>`;
     side.innerHTML = resultsPanel();
   } else {
     const n = S.floor, apts = floorApts(b.id, n, S.sec), free = countBy(apts, "free"), fl = b.floorsOf(S.sec);
