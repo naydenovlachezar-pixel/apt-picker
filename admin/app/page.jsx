@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase, WIDGET_ORIGIN } from "../lib/supabase";
 import { readFile, buildImport, downloadCsv, STATUS_OUT } from "../lib/sheet";
+import FacadeEditor from "./FacadeEditor";
 
 const STATUS = { free: "Свободен", reserved: "Резервиран", sold: "Продаден" };
 const ROOMS = { 1: "Едностаен", 2: "Двустаен", 3: "Тристаен", 4: "Четиристаен" };
@@ -73,6 +74,7 @@ function Dashboard({ session }) {
   const [live, setLive] = useState(false);
   const [importing, setImporting] = useState(null);
   const [history, setHistory] = useState(null);
+  const [facade, setFacade] = useState(false);
   const fileRef = useRef();
   const toastTimer = useRef();
 
@@ -231,6 +233,7 @@ function Dashboard({ session }) {
               <option value="">Всички статуси</option>{Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
             <span className="spacer" />
+            <button className="btn ghost" onClick={() => setFacade(true)}>Фасада</button>
             <button className="btn ghost" onClick={openHistory}>История</button>
             <button className="btn ghost" onClick={() => downloadCsv(apts, building.name)} disabled={!apts.length}>Изтегли таблицата</button>
             {canEdit && <><button className="btn ghost" onClick={() => fileRef.current.click()}>Внеси от файл</button>
@@ -251,6 +254,7 @@ function Dashboard({ session }) {
         </>}
       </main>
       {importing && <ImportDialog im={importing} building={building} onCancel={() => setImporting(null)} onApply={applyImport} />}
+      {facade && building && <FacadeEditor building={building} orgId={orgId} canEdit={canEdit} onClose={() => setFacade(false)} />}
       {history && <HistoryPanel h={history} building={building} onClose={() => setHistory(null)} />}
       {toast && <div className={"toast" + (toast.isErr ? " err" : "")} role="status">{toast.text}</div>}
     </>
