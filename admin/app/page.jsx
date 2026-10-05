@@ -160,6 +160,14 @@ function Dashboard({ session }) {
     mark(a.id); say(message);
   }
 
+  async function removeApt(a) {
+    if (!confirm(`Да се изтрие ли апартамент ${a.label} от етаж ${a.floor}? Другите етажи с това разпределение не се променят.`)) return;
+    const { error } = await sb.rpc("delete_apartment", { p_apartment: a.id });
+    if (error) return say(error.message, true);
+    await loadApts();
+    say(`Апартамент ${a.label} е изтрит от етаж ${a.floor}.`);
+  }
+
   async function onFile(e) {
     const file = e.target.files && e.target.files[0]; e.target.value = "";
     if (!file) return;
@@ -260,9 +268,9 @@ function Dashboard({ session }) {
           <div className="tablewrap">
             {loading ? <p className="empty">Зареждане на апартаментите…</p> : !apts.length ? <p className="empty">В сградата още няма апартаменти. Отворете „Разпределения“, качете чертеж на етажа и го приложете към етажите.</p> : !list.length ? <p className="empty">Няма апартаменти с тези филтри.</p> : (
               <table>
-                <thead><tr><th>Апартамент</th>{multi && <th>Вход</th>}<th>Етаж</th><th>Тип</th><th className="r">Обща площ</th><th className="r">Цена, €</th><th>Цена на сайта</th><th>Статус</th></tr></thead>
+                <thead><tr><th>Апартамент</th>{multi && <th>Вход</th>}<th>Етаж</th><th>Тип</th><th className="r">Обща площ</th><th className="r">Цена, €</th><th>Цена на сайта</th><th>Статус</th>{canEdit && <th><span className="vh">Изтриване</span></th>}</tr></thead>
                 <tbody>{list.map(a => (
-                  <Row key={a.id} a={a} multi={multi} canEdit={canEdit} busy={!!busy[a.id]} flash={!!flash[a.id]} save={save} />
+                  <Row key={a.id} a={a} multi={multi} canEdit={canEdit} busy={!!busy[a.id]} flash={!!flash[a.id]} save={save} remove={removeApt} />
                 ))}</tbody>
               </table>
             )}
@@ -280,7 +288,14 @@ function Dashboard({ session }) {
   );
 }
 
-function Row({ a, multi, canEdit, busy, flash, save }) {
+function Row({ a, multi, canEdit, busy, flash, save, remove }) {
+  const [naming, setNaming] = useState(null);
+  function commitLabel() {
+    const v = (naming || "").trim();
+    setNaming(null);
+    if (!v || v === a.label) return;
+    save(a, { label: v, label_locked: true }, `Апартамент ${a.label} вече е ${v}.`);
+  }
   const shown = a.price == null ? "" : nf.format(Math.round(a.price));
   const [price, setPrice] = useState(shown);
   useEffect(() => { setPrice(shown); }, [a.price]);
@@ -292,7 +307,10 @@ function Row({ a, multi, canEdit, busy, flash, save }) {
   }
   return (
     <tr className={(busy ? "saving " : "") + (flash ? "flash" : "")}>
-      <td className="num">{a.label}</td>
+      <td className="num">{naming !== null
+        ? <input className="lbl-in" autoFocus value={naming} aria-label={`Нов номер на апартамент ${a.label}`} onChange={e => setNaming(e.target.value.slice(0, 12))}
+            onBlur={commitLabel} onKeyDown={e => { if (e.key === "Enter") e.currentTarget.blur(); if (e.key === "Escape") setNaming(null); }} />
+        : canEdit ? <button className="lbl-btn" title="Смени номера" onClick={() => setNaming(a.label)}>{a.label}</button> : a.label}</td>
       {multi && <td>{a.secName}</td>}
       <td>{a.floor}</td>
       <td>{ROOMS[a.rooms] || a.rooms + " стаи"}</td>
@@ -314,6 +332,8 @@ function Row({ a, multi, canEdit, busy, flash, save }) {
           ))}
         </div>
       </td>
+      {canEdit && <td className="r"><button className="del-btn" onClick={() => remove(a)} disabled={busy || a.status !== "free"}
+        title={a.status === "free" ? "Изтрий апартамента от този етаж" : "Изтриват се само свободни апартаменти"} aria-label={`Изтрий апартамент ${a.label}`}>Изтрий</button></td>}
     </tr>
   );
 }
