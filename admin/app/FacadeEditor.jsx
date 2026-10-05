@@ -188,7 +188,7 @@ export default function FacadeEditor({ building, orgId, canEdit, onClose, onSave
     setAdding(null);
     await load(data.key);
     onSaved && onSaved();
-    say(`${data.name} е добавен: ${data.floors} етажа и ${data.apartments} апартамента. Очертайте етажите му и запазете.`);
+    say(data.apartments ? `${data.name} е добавен: ${data.floors} етажа и ${data.apartments} апартамента. Очертайте етажите му и запазете.` : `${data.name} е добавен с ${data.floors} етажа. Очертайте ги и им задайте разпределение.`);
   }
   async function renameSection() {
     const cur = sections.find(x => x.key === sec);
@@ -327,15 +327,16 @@ export default function FacadeEditor({ building, orgId, canEdit, onClose, onSave
       {adding && <div className="fe-modal" role="dialog" aria-labelledby="add-sec-title" onKeyDown={e => e.key === "Escape" && !adding.busy && setAdding(null)}>
         <div className="fe-modal-box">
           <h2 id="add-sec-title">Нов вход</h2>
-          <p className="muted">Етажите и апартаментите се създават по избраното разпределение. Апартаментите са свободни, с цена по запитване. После очертайте етажите върху снимката.</p>
+          <p className="muted">Ако изберете разпределение, апартаментите се създават по него: свободни, с цена по запитване. После очертайте етажите върху снимката.</p>
           <div className="field"><label htmlFor="sec-name">Име</label><input id="sec-name" placeholder={`Вход ${"АБВГДЕЖЗ"[sections.length] || ""}`} value={adding.name} onChange={e => setAdding({ ...adding, name: e.target.value })} autoFocus /></div>
           <div className="field"><label htmlFor="sec-floors">Брой етажи</label><input id="sec-floors" inputMode="numeric" value={adding.floors} onChange={e => setAdding({ ...adding, floors: e.target.value.replace(/\D/g, "") })} /></div>
           <div className="field"><label htmlFor="sec-layout">Типово разпределение</label>
             <select id="sec-layout" value={adding.layout} onChange={e => setAdding({ ...adding, layout: e.target.value })}>
+              <option value="">Без разпределение (ще го задам по-късно)</option>
               {layouts.map(l => <option key={l.key} value={l.key}>{l.name || LAYOUT_NAMES[l.key] || l.key}</option>)}
             </select></div>
           <div className="dlg-actions"><button className="btn" onClick={() => setAdding(null)} disabled={adding.busy}>Отказ</button>
-            <button className="btn primary" onClick={addSection} disabled={adding.busy || !adding.layout}>{adding.busy ? "Създаване…" : "Създай входа"}</button></div>
+            <button className="btn primary" onClick={addSection} disabled={adding.busy}>{adding.busy ? "Създаване…" : "Създай входа"}</button></div>
         </div>
       </div>}
       {msg && <div className={"toast" + (msg.isErr ? " err" : "")} role="status">{msg.text}</div>}
