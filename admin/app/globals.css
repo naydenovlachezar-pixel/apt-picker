@@ -222,3 +222,13 @@ dialog.bd{width:min(620px,calc(100% - 28px))}
 .fe-count button{min-width:32px;min-height:30px;border:1px solid var(--line);background:var(--paper);border-radius:3px;cursor:pointer;font-weight:700}
 .fe-count b{min-width:20px;text-align:center}
 @media (max-width:600px){.bd-grid{grid-template-columns:1fr}}
+
+/* Номер и изтриване в таблицата */
+.lbl-btn{background:none;border:0;padding:2px 4px;margin:-2px -4px;font:inherit;cursor:text;border-radius:2px;text-align:left}
+.lbl-btn:hover{background:var(--paper);box-shadow:inset 0 -2px 0 var(--brass)}
+.lbl-in{width:96px;font:700 18px var(--cond);border:1px solid var(--brass);background:var(--paper);border-radius:2px;padding:3px 6px}
+.del-btn{background:none;border:0;color:var(--danger);font-size:14px;cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:4px}
+.del-btn:disabled{color:var(--line);cursor:default;text-decoration:none}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.le-warn{font-size:13px;color:var(--reserved);margin-top:2px}
+.fe-side .field select{border:1px solid var(--line);background:var(--paper);border-radius:2px;padding:8px}
