@@ -209,6 +209,15 @@ export default function FacadeEditor({ building, orgId, canEdit, onClose, onSave
     onSaved && onSaved();
     say(`„${cur.name}“ е изтрит.`);
   }
+  async function setFloorCount(n) {
+    if (dirty) return say("Първо запазете промените по контурите.", true);
+    if (n < 1) return;
+    if (n < floors.length && !confirm(`Да се премахнат ли най-горните ${floors.length - n} ${floors.length - n === 1 ? "етаж" : "етажа"} с апартаментите им?`)) return;
+    const { data, error } = await sb.rpc("set_section_floors", { p_building: building.id, p_section: sec, p_count: n });
+    if (error) return say(error.message, true);
+    await load(sec); onSaved && onSaved();
+    say(data.added ? `Добавени етажи: ${data.added}. Очертайте ги и запазете.` : `Премахнати етажи: ${data.removed}.`);
+  }
 
   function close() { if (!dirty || confirm("Има незапазени промени. Да се затвори ли редакторът без тях?")) onClose(); }
 
@@ -299,6 +308,10 @@ export default function FacadeEditor({ building, orgId, canEdit, onClose, onSave
           </div>}
           </>}
 
+          {canEdit && <div className="fe-count"><span>{multi ? `${secName(sec)}, етажи` : "Етажи"}:</span>
+            <button type="button" aria-label="Премахни най-горния етаж" onClick={() => setFloorCount(floors.length - 1)} disabled={floors.length <= 1}>−</button>
+            <b>{floors.length}</b>
+            <button type="button" aria-label="Добави етаж отгоре" onClick={() => setFloorCount(floors.length + 1)}>+</button></div>}
           <ol className="fe-floors" aria-label="Етажи">
             {!floors.length && <li className="muted">В този вход няма етажи.</li>}
             {[...floors].reverse().map(f => {
