@@ -217,6 +217,11 @@ pre{white-space:pre;overflow-x:auto;font-size:12px;line-height:1.45;margin:10px 
 .fcard span{font-size:14px;color:var(--muted)}
 .fcard .st{display:flex;align-items:center;gap:6px;color:var(--ink)}
 .fcard .pr{font:600 17px var(--cond);color:var(--ink)}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.ts:empty{display:none}
+.ts{margin:0 0 12px}
+.form-err{color:#B3402B;font-size:14px;margin:0 0 10px;min-height:0}
+.form-err:empty{display:none}
 .pf-sec rect{fill:rgba(15,22,25,.78)}
 .pf-sec text{fill:#fff;font-family:var(--cond);font-weight:700;text-anchor:middle}
 html.embedded,html.embedded body{background:transparent}
@@ -322,6 +327,7 @@ function floorName(b, sec, n){ return b.multi ? `${b.secName(sec)}, етаж ${n
 
 /* ============ Вграждане: параметри от сайта домакин ============ */
 const QP = new URLSearchParams(location.search);
+const API_BASE = location.origin;
 const EMBEDDED = window.parent !== window;
 const HOST_URL = QP.get("host") || document.referrer || location.href;
 const DEMO = QP.get("demo") === "1";
@@ -390,7 +396,7 @@ function planSVG(b, n){
     const a = APTS.find(x => x.b === b.id && x.sec === S.sec && x.floor === n && x.unit === key);
     if (!a) continue;
     const st = statusOf(a), ok = matches(a);
-    s += `<polygon class="unit ${st} ${ok ? "" : "dim"}" points="${u.poly}" data-uid="${a.uid}" tabindex="0" role="button" aria-label="Апартамент ${a.label}, ${ROOM_NAMES[a.rooms].toLowerCase()}, ${m2(a.gross)}, ${STATUS[st].label.toLowerCase()}"/>`;
+    s += `<polygon class="unit ${st} ${ok ? "" : "dim"}" points="${u.poly}" data-uid="${a.uid}" tabindex="0" role="button" aria-label="Апартамент ${a.label}, ${(ROOM_NAMES[a.rooms] || a.rooms + " стаи").toLowerCase()}, ${m2(a.gross)}, ${STATUS[st].label.toLowerCase()}"/>`;
     u.walls.forEach(d => s += `<path class="p-wall" d="${d}"/>`);
     const [tx, ty] = u.tag;
     lbls += `<g class="lbls ${ok ? "" : "dim"}" pointer-events="none">${u.rl.map(([x, y, t]) => `<text class="room" x="${x}" y="${y}">${t}</text>`).join("")}
@@ -621,7 +627,7 @@ function addTestDeal(){
   toast(`Ново тестово запитване за апартамент ${a.label} в „${B(a.b).short}“.`);
 }
 
-/* ============ Запитване → HubSpot ============ */
+/* ============ Запитване ============ */
 function openInquiry(a){
   const dlg = $("#inq"), body = $("#inq-body"), b = B(a.b), sold = statusOf(a) === "sold";
   const where = b.multi ? `${b.secName(a.sec).toLowerCase()}, етаж ${a.floor}` : `етаж ${a.floor}`;
@@ -635,40 +641,76 @@ function openInquiry(a){
       <div class="field"><label for="q-email">Имейл</label><input id="q-email" type="email" autocomplete="email"><span class="err" id="e-email"></span></div>
       <div class="field"><label for="q-msg">Съобщение</label><textarea id="q-msg">${esc(msg)}</textarea></div>
       <label class="consent"><input type="checkbox" id="q-consent" required> Съгласен съм данните ми да бъдат използвани, за да се свържат с мен относно този имот.</label>
+      <div class="hp" aria-hidden="true"><label for="q-web">Уебсайт</label><input id="q-web" tabindex="-1" autocomplete="off"></div>
+      <div id="q-ts" class="ts"></div>
+      <p class="err form-err" id="e-form" role="alert"></p>
       <div class="dlg-actions"><button type="button" class="btn" data-close>Отказ</button><button type="submit" class="btn primary">Изпрати запитването</button></div>
     </form>`;
   body.querySelector("[data-close]").onclick = () => dlg.close();
   body.querySelector("#inq-form").onsubmit = ev => { ev.preventDefault(); submitInquiry(a); };
   dlg.showModal(); $("#q-name").focus();
+  mountTurnstile();
 }
-function submitInquiry(a){
+async function submitInquiry(a){
   const v = id => $(id).value.trim(); let ok = true;
   const setErr = (id, t) => { $(id).textContent = t; if (t) ok = false; };
   setErr("#e-name", v("#q-name") ? "" : "Въведете име.");
-  setErr("#e-phone", /^[+\d][\d\s-]{6,}$/.test(v("#q-phone")) ? "" : "Въведете телефон, например 0888 123 456.");
+  setErr("#e-phone", /^[+\d][\d\s()-]{6,}$/.test(v("#q-phone")) ? "" : "Въведете телефон, например 0888 123 456.");
   setErr("#e-email", !v("#q-email") || /^\S+@\S+\.\S+$/.test(v("#q-email")) ? "" : "Имейлът изглежда непълен.");
-  if (!$("#q-consent").checked) { ok = false; toast("Отбележете съгласието, за да изпратите запитването."); }
+  if (!$("#q-consent").checked) { ok = false; $("#e-form").textContent = "Отбележете съгласието, за да изпратите запитването."; } else $("#e-form").textContent = "";
   if (!ok) return;
-  const b = B(a.b), [first, ...rest] = v("#q-name").split(/\s+/), field = (name, value) => ({ objectTypeId: "0-1", name, value });
-  const payload = {
-    submittedAt: Date.now(),
-    fields: [field("firstname", first), field("lastname", rest.join(" ")), field("phone", v("#q-phone")), field("email", v("#q-email")), field("message", v("#q-msg")),
-      field("building_id", b.id), field("building_name", b.name), field("apartment_id", a.uid), field("apartment_label", a.label),
-      field("placement", EMBEDDED ? "embed" : CONFIG.placement), field("inquiry_source", CONFIG.source)].filter(f => f.value !== ""),
-    context: { pageUri: HOST_URL, pageName: EMBEDDED ? "Embedded apartment picker" : document.title },
-    legalConsentOptions: { consent: { consentToProcess: true, text: "Съгласие за обработка на данни за връзка относно имота." } }
-  };
-  const endpoint = `https://api.hsforms.com/submissions/v3/integration/submit/${CONFIG.hubspot.portalId}/${CONFIG.hubspot.formGuid}`;
-  STORE.deals.push({ id: "d" + Date.now(), apt: a.uid, name: v("#q-name"), phone: v("#q-phone"), stage: "new", t: Date.now() }); save(); renderCRM();
-  toParent({ type: "apt-picker:inquiry", building: b.id, buildingName: b.name, apartmentId: a.uid, apartmentLabel: a.label });
-  $("#inq-body").innerHTML = `<h2 id="inq-title">Запитването е изпратено</h2>
-    <p class="sub">${DEMO ? "В демото то се появява като нова сделка в CRM панела. Сменете етапа ѝ на „Резервация“ или „Спечелена“ и вижте как се променя апартаментът." : "Консултант ще се свърже с вас за този апартамент."}</p>
-    <details><summary>Какво получава HubSpot</summary><pre>POST ${esc(endpoint)}\n\n${esc(JSON.stringify(payload, null, 2))}</pre></details>
-    <div class="dlg-actions"><button class="btn" data-close>Затвори</button>${DEMO ? `<button class="btn primary" data-open-crm>Отвори CRM демото</button>` : ""}</div>`;
+  if (TS.key && !TS.token) { $("#e-form").textContent = "Изчакайте секунда проверката срещу спам и натиснете отново."; return; }
+
+  const b = B(a.b), btn = $("#inq-form [type=submit]");
+  btn.disabled = true; btn.textContent = "Изпращане…";
+  const utm = {}; try { new URL(HOST_URL).searchParams.forEach((val, k) => { if (k.startsWith("utm_")) utm[k] = val.slice(0, 100); }); } catch (e) {}
+  let res, data;
+  try {
+    res = await fetch(API_BASE + "/api/inquiry", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+      building: b.id, apartment: a.id, name: v("#q-name"), phone: v("#q-phone"), email: v("#q-email"), message: v("#q-msg"),
+      consent: true, consent_text: $("#q-consent").parentElement.textContent.trim(), page_uri: HOST_URL,
+      placement: EMBEDDED ? "embed" : "direct", website: $("#q-web").value, turnstile: TS.token, utm: Object.keys(utm).length ? utm : null }) });
+    data = await res.json().catch(() => ({}));
+  } catch (e) { data = { message: "Няма връзка. Проверете интернета и опитайте отново." }; }
+  if (!res || !res.ok || !data.ok) {
+    btn.disabled = false; btn.textContent = "Изпрати запитването";
+    $("#e-form").textContent = data.message || "Запитването не беше изпратено. Опитайте отново след малко.";
+    resetTurnstile();
+    return;
+  }
+
+  if (DEMO) { STORE.deals.push({ id: "d" + Date.now(), apt: a.uid, name: v("#q-name"), phone: v("#q-phone"), stage: "new", t: Date.now() }); save(); renderCRM(); }
+  toParent({ type: "apt-picker:inquiry", building: b.id, buildingName: b.name, apartmentId: a.uid, apartmentLabel: a.label, leadId: data.lead_id });
+  $("#inq-body").innerHTML = `<h2 id="inq-title">Благодарим ви, ${esc(v("#q-name").split(/\s+/)[0])}!</h2>
+    <p class="sub">Получихме запитването ви за апартамент ${esc(a.label)} в ${esc(b.name)}. Консултант ще се свърже с вас на ${esc(v("#q-phone"))}, обикновено в рамките на един работен ден.</p>
+    <div class="dlg-actions"><button class="btn primary" data-close>Затвори</button>${DEMO ? `<button class="btn" data-open-crm>Отвори CRM демото</button>` : ""}</div>`;
   $("#inq-body [data-close]").onclick = () => $("#inq").close();
+  $("#inq-body [data-close]").focus();
   const oc = $("#inq-body [data-open-crm]");
-  if (oc) { oc.onclick = () => { $("#inq").close(); $("#crm").hidden = false; renderCRM(); }; oc.focus(); }
+  if (oc) oc.onclick = () => { $("#inq").close(); $("#crm").hidden = false; renderCRM(); };
 }
+
+/* ============ Cloudflare Turnstile: невидима проверка срещу спам ============ */
+const TS = { key: window.__APT_TURNSTILE || null, token: null, id: null, loading: null };
+function loadTurnstile(){
+  if (!TS.key) return Promise.resolve(false);
+  if (window.turnstile) return Promise.resolve(true);
+  if (!TS.loading) TS.loading = new Promise(res => {
+    const s = document.createElement("script");
+    s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"; s.async = true;
+    s.onload = () => res(true); s.onerror = () => res(false);
+    document.head.appendChild(s);
+  });
+  return TS.loading;
+}
+async function mountTurnstile(){
+  TS.token = null;
+  if (!(await loadTurnstile()) || !window.turnstile) return;
+  const el = $("#q-ts"); if (!el) return;
+  TS.id = window.turnstile.render(el, { sitekey: TS.key, size: "flexible", appearance: "interaction-only", language: "bg",
+    callback: t => { TS.token = t; }, "expired-callback": () => { TS.token = null; }, "error-callback": () => { TS.token = null; } });
+}
+function resetTurnstile(){ if (window.turnstile && TS.id != null) { TS.token = null; window.turnstile.reset(TS.id); } }
 
 let toastTimer;
 function toast(t){ const el = $("#toast"); el.textContent = t; el.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), 3600); }
@@ -800,6 +842,7 @@ function startPolling(apply){
     console.error(e);
     return showState("Изборът на апартамент не можа да се зареди. Опитайте отново след малко.");
   }
+  window.__APT_TURNSTILE = bundle.turnstile || null;
   const apply = main(...adapt(bundle));
   window.AptPickerLive = apply; // за ръчна проверка от конзолата
   connectRealtime(bundle, apply);
