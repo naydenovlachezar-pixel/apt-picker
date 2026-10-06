@@ -5,6 +5,7 @@ import { readFile, buildImport, downloadCsv, STATUS_OUT } from "../lib/sheet";
 import FacadeEditor from "./FacadeEditor";
 import LayoutEditor from "./LayoutEditor";
 import BuildingDialog from "./BuildingDialog";
+import Leads from "./Leads";
 
 const STATUS = { free: "Свободен", reserved: "Резервиран", sold: "Продаден" };
 const ROOMS = { 1: "Едностаен", 2: "Двустаен", 3: "Тристаен", 4: "Четиристаен" };
@@ -87,6 +88,8 @@ function Dashboard({ session }) {
   const [facade, setFacade] = useState(false);
   const [plans, setPlans] = useState(false);
   const [bdlg, setBdlg] = useState(null); // "new" | "edit"
+  const [view, setView] = useState(() => typeof window !== "undefined" && new URLSearchParams(location.search).get("view") === "leads" ? "leads" : "apts");
+  const [newLeads, setNewLeads] = useState(0);
   const fileRef = useRef();
   const toastTimer = useRef();
 
@@ -107,12 +110,29 @@ function Dashboard({ session }) {
   }, []);
 
   function loadBuildings(focus) {
-    return sb.from("buildings").select("id, slug, name, district, stage, ready_text, description, published, sort_order").eq("org_id", orgId).order("sort_order").then(({ data, error }) => {
+    return sb.from("buildings").select("id, slug, name, district, stage, ready_text, description, published, sort_order, settings").eq("org_id", orgId).order("sort_order").then(({ data, error }) => {
       if (error) return say("Сградите не се заредиха: " + error.message, true);
       setBuildings(data || []); setBid(b => focus || ((data || []).some(x => x.id === b) ? b : (data && data[0] ? data[0].id : null)));
     });
   }
   useEffect(() => { if (orgId) loadBuildings(); }, [orgId]);
+
+  useEffect(() => {
+    if (!buildings.length) return;
+    const ids = buildings.map(b => b.id);
+    sb.from("leads").select("id", { count: "exact", head: true }).in("building_id", ids).eq("stage", "new").then(({ count }) => setNewLeads(count || 0));
+    const ch = sb.channel("leads-badge").on("postgres_changes", { event: "INSERT", schema: "public", table: "leads", filter: `building_id=in.(${ids.join(",")})` }, p => {
+      setNewLeads(n => n + 1);
+      const b = buildings.find(x => x.id === p.new.building_id), s = p.new.snapshot || {};
+      say(`Ново запитване от ${p.new.name}${s.label ? ` за апартамент ${s.label}` : ""}${b ? `, ${b.name}` : ""}.`);
+    }).subscribe();
+    return () => { sb.removeChannel(ch); };
+  }, [buildings.map(b => b.id).join(",")]);
+
+  function go(v) {
+    setView(v);
+    try { const u = new URL(location.href); v === "leads" ? u.searchParams.set("view", "leads") : u.searchParams.delete("view"); history.replaceState(null, "", u); } catch (e) {}
+  }
 
   function loadApts() {
     return sb.from("apartments").select(APT_FIELDS).eq("building_id", bid)
@@ -215,12 +235,18 @@ function Dashboard({ session }) {
       <header className="top">
         <span className="org">{org ? org.name : ""}</span>
         {orgs.length > 1 && <select value={orgId || ""} onChange={e => setOrgId(e.target.value)} aria-label="Организация">{orgs.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</select>}
+        <nav className="views" aria-label="Раздели">
+          <button aria-current={view === "apts" ? "page" : undefined} onClick={() => go("apts")}>Сгради</button>
+          <button aria-current={view === "leads" ? "page" : undefined} onClick={() => go("leads")}>Запитвания{newLeads > 0 && <span className="badge-n" aria-label={`${newLeads} нови`}>{newLeads}</span>}</button>
+        </nav>
         <span className={"live" + (live ? " on" : "")}><i aria-hidden="true" />{live ? "Промените се синхронизират на живо" : "Свързване…"}</span>
         <span className="spacer" />
         <span className="who">{session.user.email}{org && org.role === "viewer" ? ", само преглед" : ""}</span>
         <button className="btn ghost" onClick={() => sb.auth.signOut()}>Изход</button>
       </header>
       <main className="wrap">
+        {view === "leads" ? <Leads buildings={buildings} canEdit={canEdit} isOwner={org && org.role === "owner"} say={say} onCount={setNewLeads}
+          onOpenApt={(b, label) => { setBid(b); go("apts"); setTimeout(() => setQ(label || ""), 300); }} /> : <>
         <div className="tabs" role="tablist" aria-label="Сгради">
           {buildings.map(b => (
             <button key={b.id} className="tab" role="tab" aria-selected={b.id === bid} onClick={() => setBid(b.id)}>
@@ -299,6 +325,7 @@ function Dashboard({ session }) {
             )}
           </div>
           </div>
+        </>}
         </>}
       </main>
       {importing && <ImportDialog im={importing} building={building} onCancel={() => setImporting(null)} onApply={applyImport} />}
