@@ -9,7 +9,7 @@ export const toSlug = s => String(s || "").toLowerCase().split("").map(c => TR[c
 
 const STAGES = ["Проект", "В строеж", "Груб строеж", "Акт 15", "Акт 16", "Завършена"];
 
-export default function BuildingDialog({ mode, orgId, building, onClose, onDone }) {
+export default function BuildingDialog({ mode, orgId, building, isOwner, onClose, onDone }) {
   const sb = supabase();
   const editing = mode === "edit";
   const [f, setF] = useState(() => editing
@@ -21,6 +21,7 @@ export default function BuildingDialog({ mode, orgId, building, onClose, onDone 
   const [err, setErr] = useState("");
   const [copied, setCopied] = useState(false);
   const [check, setCheck] = useState(null);
+  const [delName, setDelName] = useState("");
   const ref = useRef();
   useEffect(() => { ref.current && ref.current.showModal(); }, []);
   const set = (k, v) => setF(x => ({ ...x, [k]: v }));
@@ -66,6 +67,20 @@ export default function BuildingDialog({ mode, orgId, building, onClose, onDone 
     }
   }
 
+  async function removeBuilding() {
+    setErr(""); setBusy(true);
+    const { error } = await sb.rpc("delete_building", { p_building: building.id, p_confirm_name: delName });
+    if (error) { setBusy(false); return setErr(error.message); }
+    // Снимките и чертежите на сградата в хранилището вече не са нужни
+    try {
+      const st = sb.storage.from("media"), dir = `${orgId}/${building.id}`;
+      const { data: files } = await st.list(dir, { limit: 1000 });
+      if (files && files.length) await st.remove(files.map(x => `${dir}/${x.name}`));
+    } catch { }
+    setBusy(false);
+    onDone({ deleted: true, message: `Сградата „${building.name}“ е изтрита.` });
+  }
+
   const code = `<div data-apt-picker data-building="${f.slug}"></div>\n<script src="${WIDGET_ORIGIN}/embed.js" async></script>`;
   async function copy() { try { await navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { } }
   const ready = check && check.facade && check.floors > 0 && check.outlined === check.floors && check.apts > 0;
@@ -92,6 +107,18 @@ export default function BuildingDialog({ mode, orgId, building, onClose, onDone 
           {check && !ready && <p className="warn">Преди да я покажете: {[!check.facade && "качете снимка на фасадата", check.floors && check.outlined < check.floors && `очертайте етажите (${check.outlined} от ${check.floors})`, !check.apts && "добавете разпределение с апартаменти"].filter(Boolean).join(", ")}.</p>}
           <div className="bd-code"><b>Код за вграждане</b><pre>{code}</pre><button type="button" className="btn ghost" onClick={copy}>{copied ? "Копирано" : "Копирай кода"}</button></div>
         </div>}
+
+        {editing && isOwner && <details className="bd-danger">
+          <summary>Изтриване на сградата</summary>
+          <p>Изтриват се всички входове, етажи, разпределения, апартаменти, историята и запитванията за тази сграда. Това не може да се върне.</p>
+          {building.published
+            ? <p className="warn">Сградата се показва на сайта. Първо махнете отметката „Показвай сградата на сайта“ и запазете.</p>
+            : <>
+              <div className="field"><label htmlFor="bd-del">За потвърждение напишете името: <b>{building.name}</b></label>
+                <input id="bd-del" value={delName} onChange={e => setDelName(e.target.value)} autoComplete="off" /></div>
+              <button type="button" className="btn danger" onClick={removeBuilding} disabled={busy || delName.trim() !== building.name.trim()}>Изтрий сградата завинаги</button>
+            </>}
+        </details>}
 
         {err && <p className="err" role="alert">{err}</p>}
         <div className="dlg-actions">
