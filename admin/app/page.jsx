@@ -230,6 +230,12 @@ function Dashboard({ session }) {
           {canEdit && <button className="tab add" onClick={() => setBdlg("new")}>+ Нова сграда</button>}
         </div>
 
+        {!building && buildings.length === 0 && <div className="empty-org">
+          <h2>Още нямате сгради</h2>
+          <p>Създайте първата: въведете име и брой етажи, после качете снимка на фасадата и чертежите на етажите.</p>
+          {canEdit && <button className="btn primary" onClick={() => setBdlg("new")}>Нова сграда</button>}
+        </div>}
+
         {building && <>
           <section className="bhead" aria-label="Сграда">
             <div className="bh-title">
@@ -298,8 +304,8 @@ function Dashboard({ session }) {
       {importing && <ImportDialog im={importing} building={building} onCancel={() => setImporting(null)} onApply={applyImport} />}
       {facade && building && <FacadeEditor building={building} orgId={orgId} canEdit={canEdit} onClose={() => setFacade(false)} onSaved={loadApts} />}
       {plans && building && <LayoutEditor building={building} orgId={orgId} canEdit={canEdit} onClose={() => setPlans(false)} onSaved={loadApts} />}
-      {bdlg && <BuildingDialog mode={bdlg} orgId={orgId} building={bdlg === "edit" ? building : null} onClose={() => setBdlg(null)}
-        onDone={async r => { const created = r.created; setBdlg(null); await loadBuildings(r.id); say(r.message); if (created) setFacade(true); }} />}
+      {bdlg && <BuildingDialog mode={bdlg} orgId={orgId} building={bdlg === "edit" ? building : null} isOwner={org && org.role === "owner"} onClose={() => setBdlg(null)}
+        onDone={async r => { const created = r.created; setBdlg(null); if (r.deleted) setBid(null); await loadBuildings(r.deleted ? null : r.id); say(r.message); if (created) setFacade(true); }} />}
       {history && <HistoryPanel h={history} building={building} onClose={() => setHistory(null)} />}
       {toast && <div className={"toast" + (toast.isErr ? " err" : "")} role="status">{toast.text}</div>}
     </>
