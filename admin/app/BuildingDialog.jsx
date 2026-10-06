@@ -13,7 +13,8 @@ export default function BuildingDialog({ mode, orgId, building, isOwner, onClose
   const sb = supabase();
   const editing = mode === "edit";
   const [f, setF] = useState(() => editing
-    ? { name: building.name || "", slug: building.slug, district: building.district || "", stage: building.stage || "", ready: building.ready_text || "", desc: building.description || "", published: !!building.published }
+    ? { name: building.name || "", slug: building.slug, district: building.district || "", stage: building.stage || "", ready: building.ready_text || "", desc: building.description || "", published: !!building.published,
+        emails: ((building.settings && building.settings.leads && building.settings.leads.emails) || []).join(", ") }
     : { name: "", slug: "", district: "", stage: "Проект", ready: "", desc: "", floors: "6", published: false });
   const [slugTouched, setSlugTouched] = useState(editing);
   const [slugOk, setSlugOk] = useState(null);
@@ -52,9 +53,13 @@ export default function BuildingDialog({ mode, orgId, building, isOwner, onClose
     if (!f.name.trim()) return setErr("Въведете име на сградата.");
     setBusy(true);
     if (editing) {
+      const emails = f.emails.split(/[,;\s]+/).map(x => x.trim().toLowerCase()).filter(Boolean);
+      const bad = emails.find(x => !/^\S+@\S+\.\S+$/.test(x));
+      if (bad) { setBusy(false); return setErr(`„${bad}“ не изглежда като имейл адрес.`); }
+      const settings = { ...(building.settings || {}), leads: { ...((building.settings || {}).leads || {}), emails } };
       const { error } = await sb.from("buildings").update({
         name: f.name.trim(), short_name: f.name.trim(), district: f.district.trim() || null, stage: f.stage.trim() || null,
-        ready_text: f.ready.trim() || null, description: f.desc.trim() || null, published: f.published
+        ready_text: f.ready.trim() || null, description: f.desc.trim() || null, published: f.published, settings
       }).eq("id", building.id);
       setBusy(false);
       if (error) return setErr("Не е запазено: " + error.message);
@@ -100,6 +105,9 @@ export default function BuildingDialog({ mode, orgId, building, isOwner, onClose
           <div className="field"><label htmlFor="bd-ready">Срок</label><input id="bd-ready" value={f.ready} onChange={e => set("ready", e.target.value)} placeholder="Акт 16 през 2028" /></div>
           {!editing && <div className="field"><label htmlFor="bd-floors">Брой етажи</label><input id="bd-floors" inputMode="numeric" value={f.floors} onChange={e => set("floors", e.target.value.replace(/\D/g, ""))} /></div>}
           <div className="field wide"><label htmlFor="bd-desc">Кратко описание</label><textarea id="bd-desc" rows={2} value={f.desc} onChange={e => set("desc", e.target.value)} /></div>
+          {editing && <div className="field wide"><label htmlFor="bd-emails">Имейли за нови запитвания</label>
+            <input id="bd-emails" value={f.emails} onChange={e => set("emails", e.target.value)} placeholder="sales@firma.bg, ivan@firma.bg" />
+            <span className="muted">Разделени със запетая. Ако е празно, имейлът отива до собственика на акаунта.</span></div>}
         </div>
 
         {editing && <div className="bd-pub">
