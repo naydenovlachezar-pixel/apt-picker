@@ -1,0 +1,24 @@
+/* Екип и строители */
+.invite-form{margin-bottom:16px}
+.invite-form .tbar{background:var(--surface)}
+.invite-form input[type=email]{min-width:280px}
+.role-hint{font-size:14px}
+.invite-note{margin:0 0 16px}
+.invite-note p{margin:6px 0 4px;font-size:15px}
+.invite-note code{background:var(--paper);border:1px solid var(--line);padding:6px 10px;border-radius:2px;font-size:14px}
+table.team{min-width:640px}
+table.team select{border:1px solid var(--line);background:var(--surface);border-radius:2px;padding:5px 8px}
+table.team .sub{display:block;font-size:13px;color:var(--muted)}
+.tag-me,.tag-pending{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:1px 8px;vertical-align:1px}
+.tag-me{margin-left:8px;background:var(--paper);color:var(--muted);border:1px solid var(--line)}
+.tag-pending{background:color-mix(in srgb,var(--reserved) 16%,transparent);color:color-mix(in srgb,var(--reserved) 70%,var(--ink))}
+td b + .tag-pending{margin-left:8px}
+tr.pending td{background:color-mix(in srgb,var(--reserved) 5%,transparent)}
+.team-foot{font-size:14px;margin-top:10px}
+.dev-form{padding:14px 16px;margin-bottom:16px}
+.dev-form > .muted{margin:8px 0 0;font-size:14px}
+.dev-grid{display:grid;grid-template-columns:2fr 1.3fr 2fr auto;gap:10px;align-items:end}
+.dev-grid .field{margin:0}
+.dev-grid input{border:1px solid var(--line);background:var(--paper);border-radius:2px;padding:9px 10px;width:100%}
+.linkbtn.back{margin:0 0 10px}
+@media (max-width:860px){.dev-grid{grid-template-columns:1fr}.invite-form input[type=email]{min-width:0;flex:1 1 100%}}

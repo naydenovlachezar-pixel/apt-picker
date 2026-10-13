@@ -6,6 +6,7 @@ import FacadeEditor from "./FacadeEditor";
 import LayoutEditor from "./LayoutEditor";
 import BuildingDialog from "./BuildingDialog";
 import Leads from "./Leads";
+import { Team, Developers } from "./Team";
 
 const STATUS = { free: "Свободен", reserved: "Резервиран", sold: "Продаден" };
 const ROOMS = { 1: "Едностаен", 2: "Двустаен", 3: "Тристаен", 4: "Четиристаен" };
@@ -44,7 +45,14 @@ function Login() {
       email: email.trim().toLowerCase(),
       options: { emailRedirectTo: window.location.origin }
     });
-    if (error) { setState("idle"); setError(error.message.includes("rate") ? "Изпратени са твърде много линкове. Опитайте отново след няколко минути." : "Линкът не беше изпратен: " + error.message); return; }
+    if (error) {
+      setState("idle");
+      const m = error.message || "";
+      setError(/rate/i.test(m) ? "Изпратени са твърде много линкове. Опитайте отново след няколко минути."
+        : /покана|not allowed|hook/i.test(m) ? "Този имейл няма покана за панела. Помолете собственика на акаунта да ви покани."
+        : "Линкът не беше изпратен: " + m);
+      return;
+    }
     setState("sent");
   }
   return (
@@ -88,7 +96,9 @@ function Dashboard({ session }) {
   const [facade, setFacade] = useState(false);
   const [plans, setPlans] = useState(false);
   const [bdlg, setBdlg] = useState(null); // "new" | "edit"
-  const [view, setView] = useState(() => typeof window !== "undefined" && new URLSearchParams(location.search).get("view") === "leads" ? "leads" : "apts");
+  const [view, setView] = useState(() => { const v = typeof window !== "undefined" && new URLSearchParams(location.search).get("view"); return ["leads", "team", "devs"].includes(v) ? v : "apts"; });
+  const [admin, setAdmin] = useState(false);
+  const [teamOrg, setTeamOrg] = useState(null); // екипът на друг строител, отворен от „Строители“
   const [newLeads, setNewLeads] = useState(0);
   const fileRef = useRef();
   const toastTimer = useRef();
@@ -107,6 +117,7 @@ function Dashboard({ session }) {
       if (error) { say("Организациите не се заредиха: " + error.message, true); setOrgs([]); return; }
       setOrgs(data || []); if (data && data.length) setOrgId(data[0].id);
     });
+    sb.rpc("am_platform_admin").then(({ data }) => setAdmin(!!data));
   }, []);
 
   function loadBuildings(focus) {
@@ -131,7 +142,8 @@ function Dashboard({ session }) {
 
   function go(v) {
     setView(v);
-    try { const u = new URL(location.href); v === "leads" ? u.searchParams.set("view", "leads") : u.searchParams.delete("view"); history.replaceState(null, "", u); } catch (e) {}
+    setTeamOrg(null);
+    try { const u = new URL(location.href); v !== "apts" ? u.searchParams.set("view", v) : u.searchParams.delete("view"); history.replaceState(null, "", u); } catch (e) {}
   }
 
   function loadApts() {
@@ -238,6 +250,8 @@ function Dashboard({ session }) {
         <nav className="views" aria-label="Раздели">
           <button aria-current={view === "apts" ? "page" : undefined} onClick={() => go("apts")}>Сгради</button>
           <button aria-current={view === "leads" ? "page" : undefined} onClick={() => go("leads")}>Запитвания{newLeads > 0 && <span className="badge-n" aria-label={`${newLeads} нови`}>{newLeads}</span>}</button>
+          <button aria-current={view === "team" ? "page" : undefined} onClick={() => go("team")}>Екип</button>
+          {admin && <button aria-current={view === "devs" ? "page" : undefined} onClick={() => go("devs")}>Строители</button>}
         </nav>
         <span className={"live" + (live ? " on" : "")}><i aria-hidden="true" />{live ? "Промените се синхронизират на живо" : "Свързване…"}</span>
         <span className="spacer" />
@@ -245,7 +259,10 @@ function Dashboard({ session }) {
         <button className="btn ghost" onClick={() => sb.auth.signOut()}>Изход</button>
       </header>
       <main className="wrap">
-        {view === "leads" ? <Leads buildings={buildings} canEdit={canEdit} isOwner={org && org.role === "owner"} say={say} onCount={setNewLeads}
+        {view === "devs" && admin ? (teamOrg ? <><button className="linkbtn back" onClick={() => setTeamOrg(null)}>‹ Всички строители</button><Team org={{ ...teamOrg, role: "owner" }} say={say} /></>
+          : <Developers say={say} onOpenOrg={o => setTeamOrg(o)} />)
+        : view === "team" && org ? <Team org={org} say={say} />
+        : view === "leads" ? <Leads buildings={buildings} canEdit={canEdit} isOwner={org && org.role === "owner"} say={say} onCount={setNewLeads}
           onOpenApt={(b, label) => { setBid(b); go("apts"); setTimeout(() => setQ(label || ""), 300); }} /> : <>
         <div className="tabs" role="tablist" aria-label="Сгради">
           {buildings.map(b => (
