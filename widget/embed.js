@@ -2,6 +2,8 @@
  * Apartment Picker embed loader
  * Usage:
  *   <div data-apt-picker data-building="bor" data-buildings="bor,horizont" data-theme="light" data-offset-top="64"></div>
+ *   data-demo          CRM демо панел, само когато адресът на страницата съдържа ?crm=1
+ *   data-demo="always" CRM демо панел винаги
  *   <script src="https://YOUR-HOST/embed.js" async></script>
  * Events (bubble from the container element):
  *   apt-picker:inquiry  detail: { building, buildingName, apartmentId, apartmentLabel }
@@ -21,7 +23,12 @@
     if (el.dataset.buildings) p.set("only", el.dataset.buildings);
     if (el.dataset.apartment) p.set("apt", el.dataset.apartment);
     if (el.dataset.theme) p.set("theme", el.dataset.theme);
-    if ("demo" in el.dataset) p.set("demo", "1");
+    // CRM демо панелът: data-demo="always" го показва винаги;
+    // data-demo без стойност го показва само ако страницата е отворена с ?crm=1
+    if ("demo" in el.dataset) {
+      var crm = new URLSearchParams(location.search).get("crm");
+      if (el.dataset.demo === "always" || crm === "1") p.set("demo", "1");
+    }
     p.set("host", location.href.split("#")[0]);
     var f = document.createElement("iframe");
     f.src = ORIGIN + "/embed.html?" + p.toString();

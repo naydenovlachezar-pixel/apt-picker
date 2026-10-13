@@ -25,7 +25,7 @@ table{border-collapse:collapse;width:100%;font-size:15px} td,th{border-bottom:1p
 <tr><td><code>data-apartment</code></td><td>Директно отваряне на апартамент, например 5A</td></tr>
 <tr><td><code>data-theme</code></td><td>light или dark</td></tr>
 <tr><td><code>data-offset-top</code></td><td>Височина на фиксирано меню на сайта в пиксели, за да не закрива прозорците</td></tr>
-<tr><td><code>data-demo</code></td><td>Показва CRM демо панела</td></tr>
+<tr><td><code>data-demo</code></td><td>CRM демо панел (симулация). Без стойност се показва само когато адресът на страницата съдържа <code>?crm=1</code>; с <code>data-demo="always"</code> се показва винаги</td></tr>
 </table></div>
 <h2>Събития</h2>
 <pre><code>document.addEventListener("apt-picker:inquiry", e =&gt; {
@@ -33,6 +33,6 @@ table{border-collapse:collapse;width:100%;font-size:15px} td,th{border-bottom:1p
   gtag("event", "generate_lead", { item_id: e.detail.apartmentId });
 });</code></pre>
 <h2>Пример</h2>
-<div data-apt-picker data-building="terasi" data-buildings="terasi,spirala" data-theme="light" data-demo></div>
+<div data-apt-picker data-building="terasi" data-buildings="terasi,spirala" data-theme="light" data-demo="always"></div>
 <script src="/embed.js" async></script>
 </main></body></html>
