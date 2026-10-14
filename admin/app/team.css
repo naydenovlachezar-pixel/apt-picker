@@ -22,3 +22,22 @@ tr.pending td{background:color-mix(in srgb,var(--reserved) 5%,transparent)}
 .dev-grid input{border:1px solid var(--line);background:var(--paper);border-radius:2px;padding:9px 10px;width:100%}
 .linkbtn.back{margin:0 0 10px}
 @media (max-width:860px){.dev-grid{grid-template-columns:1fr}.invite-form input[type=email]{min-width:0;flex:1 1 100%}}
+
+/* Посещения на демото */
+.demo-visits{margin:0 0 28px}
+.demo-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 12px}
+.demo-head h2{font:700 24px var(--cond);margin:0 0 2px}
+.demo-head p{margin:0;font-size:14px}
+.demo-link{margin:0 0 12px}
+.demo-link input{min-width:280px;flex:1 1 280px}
+.demo-link code{font-size:13px;background:var(--surface);border:1px solid var(--line);padding:6px 10px;border-radius:2px;overflow-wrap:anywhere}
+table.demo-table{min-width:760px}
+table.demo-table tbody tr{cursor:pointer}
+table.demo-table tbody tr:hover td{background:var(--paper)}
+table.demo-table tr.is-open td{background:var(--paper)}
+table.demo-table tr.log-row{cursor:default}
+table.demo-table tr.log-row td{background:var(--paper);padding-top:0}
+.tag-yes{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:1px 9px;background:color-mix(in srgb,var(--free) 18%,transparent);color:color-mix(in srgb,var(--free) 70%,var(--ink))}
+td .tag-yes + .sub{margin-top:2px}
+.demo-log{margin:6px 0 4px;padding-left:18px;font-size:14px;line-height:1.7}
+@media (max-width:860px){.demo-link input{min-width:0}}

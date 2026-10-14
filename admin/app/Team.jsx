@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { toSlug } from "./BuildingDialog";
+import { DemoVisits } from "./Demo";
 import "./team.css";
 
 export const ROLES = { owner: "Собственик", editor: "Редактор", viewer: "Само преглед" };
@@ -127,6 +128,8 @@ export function Developers({ say, onOpenOrg }) {
   if (!rows) return <p className="empty">Зареждане на строителите…</p>;
   return <>
     <section className="bhead"><div className="bh-title"><h1>Строители</h1><p><span>Само за собственика на платформата</span><span>{rows.length} общо</span></p></div></section>
+
+    <DemoVisits say={say} />
 
     <form className="tcard dev-form" onSubmit={create}>
       <div className="dev-grid">
