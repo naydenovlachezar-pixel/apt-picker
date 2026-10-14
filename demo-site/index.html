@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Линия Девелопмънт — нови жилищни сгради в София</title>
+<meta name="description" content="Демо сайт на измислен строител с вграден интерактивен избор на апартамент.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Commissioner:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#13212B;--muted:#5D6A72;--line:#DDE1E3;--bg:#FFFFFF;--soft:#F2F3F1;--accent:#B5683A;--font:"Commissioner",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;box-sizing:border-box}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;font:16px/1.6 var(--font);color:var(--ink);background:var(--bg)}
+a{color:inherit}
+.in{max-width:1280px;margin:0 auto;padding:0 24px}
+header{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.94);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+header .in{display:flex;align-items:center;justify-content:space-between;gap:16px;height:64px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.02em;text-decoration:none;font-size:18px}
+.logo i{width:26px;height:26px;background:linear-gradient(90deg,var(--ink) 0 30%,transparent 30% 38%,var(--ink) 38% 68%,transparent 68% 76%,var(--accent) 76%);display:block}
+nav{display:flex;gap:26px;font-weight:500;font-size:15px}
+nav a{text-decoration:none} nav a:hover{color:var(--accent)}
+.call{border:1px solid var(--ink);padding:8px 14px;border-radius:999px;text-decoration:none;font-weight:600;font-size:14px;white-space:nowrap}
+
+/* ===== Хиро: визуализация с подчертан етаж ===== */
+.hero{position:relative;min-height:min(84vh,760px);display:flex;align-items:flex-end;color:#fff;background:#13212B url("https://apt-picker-engine.vercel.app/media/apt-picker-media/hero-poster.webp") 62% center/cover no-repeat;overflow:hidden;isolation:isolate}
+.hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:62% center;z-index:-2}
+@media (prefers-reduced-motion:reduce){.hero-video{display:none}}
+.hero::before{content:"";position:absolute;inset:0;z-index:-1;background:rgba(0,0,0,.5)}
+.hero .in{position:relative;padding-bottom:56px;width:100%}
+.eyebrow{text-transform:uppercase;letter-spacing:.14em;font-size:13px;font-weight:600;opacity:.85}
+.hero h1{font-size:clamp(36px,5.6vw,72px);line-height:1.02;letter-spacing:-.02em;margin:10px 0 16px;max-width:14ch;font-weight:800}
+.hero p{max-width:36em;font-size:18px;opacity:.92;margin:0 0 26px}
+
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;border:0;padding:14px 22px;border-radius:999px;font:600 16px var(--font);text-decoration:none;cursor:pointer}
+.btn:hover{filter:brightness(1.07)} .btn.ghost{background:transparent;border:1px solid currentColor}
+.cta{display:flex;gap:10px;flex-wrap:wrap}
+.strip{background:var(--ink);color:#fff}
+.strip .in{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;padding:26px 24px}
+.strip b{display:block;font-size:34px;line-height:1.1;font-weight:800}
+.strip span{opacity:.75;font-size:14px}
+section{padding:72px 0}
+.head{display:flex;align-items:end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:28px}
+.head h2{font-size:clamp(28px,3.4vw,44px);line-height:1.05;letter-spacing:-.015em;margin:0;font-weight:800}
+.head p{color:var(--muted);margin:0;max-width:34em}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:6px;overflow:hidden;display:flex;flex-direction:column}
+.card .img{aspect-ratio:4/3;background:#ccc center/cover no-repeat;border:0;padding:0;cursor:pointer;display:block;width:100%}
+.card .body{padding:18px 18px 20px;display:flex;flex-direction:column;flex:1}
+.card h3{margin:0 0 2px;font-size:22px;font-weight:700}
+.meta{color:var(--muted);font-size:14px;margin-bottom:12px}
+.card p{margin:0 0 16px;color:var(--muted);font-size:15px}
+.nums{display:flex;gap:20px;margin:auto 0 16px;font-size:14px;color:var(--muted)}
+.nums b{display:block;color:var(--ink);font-size:20px}
+.card .btn{align-self:flex-start;padding:10px 18px;font-size:15px}
+.skeleton{height:420px;border-radius:6px;background:linear-gradient(90deg,var(--soft),#e7e9e7,var(--soft));background-size:200% 100%;animation:sk 1.4s infinite}
+@keyframes sk{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.skeleton{animation:none}}
+.picker{background:var(--soft)}
+.dev{border-top:1px solid var(--line)}
+details{border:1px solid var(--line);border-radius:6px;padding:14px 18px;background:#fff}
+summary{cursor:pointer;font-weight:600}
+pre{background:var(--ink);color:#E6ECEF;padding:16px;border-radius:4px;overflow-x:auto;font-size:14px;margin:14px 0 4px}
+.why{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
+.why h3{margin:0 0 6px;font-size:19px} .why p{margin:0;color:var(--muted)}
+footer{background:var(--ink);color:#C9D2D7;padding:40px 0;font-size:15px}
+footer .in{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+footer b{color:#fff}
+.note{position:fixed;left:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:30;max-width:min(380px,calc(100% - 36px));background:#fff;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:6px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.15);font-size:14px;transform:translateY(20px);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s}
+.note.show{opacity:1;transform:none;pointer-events:auto}
+.note b{display:block;margin-bottom:2px}
+.note code{font-size:12.5px;background:var(--soft);padding:1px 5px;border-radius:3px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+@media (max-width:960px){.grid,.why{grid-template-columns:1fr 1fr} nav{display:none}}
+@media (max-width:620px){.grid,.why{grid-template-columns:1fr}.strip .in{grid-template-columns:1fr 1fr}.in{padding:0 16px}section{padding:52px 0}}
+</style>
+<script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+<header><div class="in">
+  <a class="logo" href="#"><i aria-hidden="true"></i>ЛИНИЯ</a>
+  <nav aria-label="Основна навигация"><a href="#proekti">Проекти</a><a href="#izbor">Апартаменти</a><a href="#za-nas">За нас</a><a href="#kontakt">Контакт</a></nav>
+  <a class="call" href="#kontakt">02 000 0000</a>
+</div></header>
+
+<div class="hero" id="hero">
+  <video class="hero-video" autoplay muted loop playsinline preload="auto" poster="https://apt-picker-engine.vercel.app/media/apt-picker-media/hero-poster.webp" aria-hidden="true"><source src="https://apt-picker-engine.vercel.app/media/apt-picker-media/hero-loop.mp4" type="video/mp4"></video>
+  <div class="in">
+    <div class="eyebrow">Линия Девелопмънт, София</div>
+    <h1>Изберете своя етаж, преди да е построен</h1>
+    <p>Шест жилищни сгради в София. Разгледайте всяка от тях етаж по етаж, вижте свободните апартаменти и изпратете запитване за конкретния имот.</p>
+    <div class="cta"><a class="btn" href="#izbor">Изберете апартамент</a><a class="btn ghost" href="#proekti">Проектите</a></div>
+  </div>
+</div>
+
+<div class="strip"><div class="in" id="strip">
+  <div><b id="s-proj">6</b><span>проекта в продажба</span></div>
+  <div><b id="s-free">…</b><span>свободни апартамента</span></div>
+  <div><b id="s-min">…</b><span>най-ниска цена</span></div>
+</div></div>
+
+<section id="proekti"><div class="in">
+  <div class="head"><h2>Проекти</h2><p>Наличността в картите идва директно от системата за продажби и се обновява сама.</p></div>
+  <div class="grid" id="cards"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+</div></section>
+
+<section class="picker" id="izbor"><div class="in">
+  <div class="head"><h2>Изберете апартамент</h2><p>Посочете етаж от сградата, отворете разпределението и изберете апартамент.</p></div>
+  <div id="picker" data-apt-picker data-building="bor" data-theme="light" data-offset-top="64" data-demo></div>
+</div></section>
+
+<section id="za-nas"><div class="in">
+  <div class="head"><h2>Защо Линия</h2></div>
+  <div class="why">
+    <div><h3>Прозрачна наличност</h3><p>Виждате кои апартаменти са свободни в момента, без да чакате обаждане.</p></div>
+    <div><h3>Запитване за конкретен имот</h3><p>Консултантът знае за кой апартамент питате още преди да ви се обади.</p></div>
+    <div><h3>Шест локации</h3><p>От Бояна до Младост, от първа копка до готови за нанасяне сгради.</p></div>
+  </div>
+</div></section>
+
+<section class="dev"><div class="in">
+  <details><summary>За разработчици: как е вграден изборът на апартамент</summary>
+    <p>Целият модул по-горе е вграден в тази страница с два реда код. Сайтът и модулът са на различни домейни.</p>
+    <pre><code id="snippet"></code></pre>
+    <p>Всеки строител получава собствен код с идентификаторите на своите сгради.</p>
+    <p>При всяко запитване страницата получава събитие <code>apt-picker:inquiry</code>, с което може да отчете конверсия в GA4, Meta Pixel или друга система.</p>
+  </details>
+</div></section>
+
+<footer id="kontakt"><div class="in">
+  <div><b>Линия Девелопмънт</b><br>Офис продажби: бул. „Примерен“ 1, София<br>02 000 0000, sales@example.com</div>
+  <div>Демо сайт. Строителят, сградите и данните са измислени.</div>
+</div></footer>
+
+<div class="note" id="note" role="status"></div>
+
+<script>
+/* ===== НАСТРОЙКА: адресът на widget проекта в Vercel ===== */
+var WIDGET_ORIGIN = "https://apt-picker-engine.vercel.app";
+</script>
+<script>
+(function(){
+  var W = WIDGET_ORIGIN.replace(/\/$/, "");
+  var tag = document.createElement("script"); tag.src = W + "/embed.js"; document.body.appendChild(tag);
+  var nf = new Intl.NumberFormat("bg-BG"), eur = function(n){ return nf.format(n) + " €"; };
+  var esc = function(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); };
+  var picker = document.getElementById("picker");
+  document.getElementById("snippet").textContent = '<div data-apt-picker data-building="вашата-сграда"></div>\n<script src="' + W + '/embed.js" async><\/script>';
+
+  function pick(id){
+    window.AptPicker && AptPicker.setBuilding(picker, id);
+    document.getElementById("izbor").scrollIntoView();
+  }
+  document.getElementById("cards").addEventListener("click", function(e){
+    var b = e.target.closest("[data-b]"); if (b) pick(b.dataset.b);
+  });
+
+  // Картите и броячите се изграждат от данните на widget-а: един източник на истина.
+  picker.addEventListener("apt-picker:stats", function(e){
+    var list = e.detail.buildings || [];
+    var free = list.reduce(function(s, b){ return s + b.free; }, 0);
+    var mins = list.map(function(b){ return b.minPrice; }).filter(Boolean);
+    document.getElementById("s-proj").textContent = list.length;
+    document.getElementById("s-free").textContent = free;
+    document.getElementById("s-min").textContent = mins.length ? eur(Math.min.apply(null, mins)) : "—";
+    document.getElementById("cards").innerHTML = list.map(function(b){
+      return '<article class="card"><button class="img" data-b="' + b.id + '" style="background-image:url(' + b.img + ')" aria-label="Апартаменти в ' + esc(b.name) + '"></button>' +
+        '<div class="body"><h3>' + esc(b.name) + '</h3><div class="meta">' + esc(b.district) + ', ' + esc(b.stage) + '</div><p>' + esc(b.desc) + '</p>' +
+        '<div class="nums"><div><b>' + b.free + '</b>свободни</div><div><b>' + b.floors + '</b>етажа</div><div><b>' + (b.minPrice ? eur(b.minPrice) : "—") + '</b>цени от</div></div>' +
+        '<button class="btn" data-b="' + b.id + '">Изберете апартамент</button></div></article>';
+    }).join("");
+  });
+
+  var noteTimer;
+  picker.addEventListener("apt-picker:inquiry", function(e){
+    var d = e.detail, n = document.getElementById("note");
+    n.innerHTML = "<b>Сайтът получи запитване от widget-а</b>Апартамент " + esc(d.apartmentLabel) + ", " + esc(d.buildingName) +
+      ". Събитие <code>apt-picker:inquiry</code>, готово за GA4 или Meta Pixel.";
+    n.classList.add("show"); clearTimeout(noteTimer); noteTimer = setTimeout(function(){ n.classList.remove("show"); }, 6000);
+    if (window.dataLayer) dataLayer.push({ event: "apartment_inquiry", apartment_id: d.apartmentId, building: d.building });
+  });
+})();
+</script>
+<script>
+/* ===== Лични линкове: ?ref=име записва посещенията в базата (само за кампанията) ===== */
+(function(){
+  var SB = "https://zmpcsksagrxtrdyqjnvw.supabase.co", KEY = "sb_publishable_k7D6pANGMnHAa652DTQBgQ_sAZAgAbE";
+  var q = new URLSearchParams(location.search), ref = (q.get("ref") || "").toLowerCase();
+  try { if (ref) localStorage.setItem("demo_ref", ref); else ref = localStorage.getItem("demo_ref") || ""; } catch (e) {}
+  if (!/^[a-z0-9_-]{1,40}$/.test(ref)) return;
+  var sid; try { sid = sessionStorage.getItem("demo_sid"); if (!sid) { sid = Math.random().toString(36).slice(2) + Date.now().toString(36); sessionStorage.setItem("demo_sid", sid); } } catch (e) { sid = null; }
+  function track(ev, detail){
+    try {
+      fetch(SB + "/rest/v1/rpc/track_demo_visit", { method: "POST", keepalive: true,
+        headers: { apikey: KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ p_ref: ref, p_event: ev, p_detail: detail || null, p_session: sid, p_page: location.pathname + location.search, p_referrer: document.referrer || null }) });
+    } catch (e) {}
+  }
+  track("view");
+  var izbor = document.getElementById("izbor"), seen = false;
+  if (izbor && "IntersectionObserver" in window) new IntersectionObserver(function(es, o){ if (!seen && es[0].isIntersecting) { seen = true; track("picker_view"); o.disconnect(); } }, { threshold: .1 }).observe(izbor);
+  document.getElementById("picker").addEventListener("apt-picker:inquiry", function(e){ var d = e.detail || {}; track("inquiry", (d.apartmentLabel || "") + " / " + (d.buildingName || "")); });
+})();
+</script>
+</body>
+</html>
